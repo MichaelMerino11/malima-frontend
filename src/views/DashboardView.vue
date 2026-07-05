@@ -116,6 +116,7 @@ const cerrarZona = async (zona_id: number) => {
 }
 
 onMounted(async () => {
+  await store.cargarZonas()
   for (const zona of zonas.value) {
     await store.cargarEstadoZona(zona.id)
   }

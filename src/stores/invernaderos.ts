@@ -50,6 +50,20 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
     }
   }
 
+  const cargarZonas = async () => {
+    try {
+      cargando.value = true
+      const { data } = await api.get('/zonas')
+      if (data.ok) {
+        zonas.value = data.data
+      }
+    } catch (e) {
+      error.value = 'Error cargando zonas'
+    } finally {
+      cargando.value = false
+    }
+  }
+
   const enviarComando = async (invernadero_id: number, accion: 'abrir' | 'cerrar' | 'detener') => {
     try {
       const { data } = await api.post(`/control/invernadero/${invernadero_id}`, {
@@ -90,6 +104,7 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
     zonas,
     cargando,
     error,
+    cargarZonas,
     cargarEstadoZona,
     enviarComando,
     enviarComandoZona,
