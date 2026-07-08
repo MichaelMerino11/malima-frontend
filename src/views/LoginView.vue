@@ -5,9 +5,7 @@
         <v-row align="center" justify="center" class="fill-height">
           <v-col cols="12" sm="8" md="5" lg="4">
             <div class="text-center mb-6">
-              <v-icon size="56" color="primary">mdi-leaf</v-icon>
-              <h1 class="text-h5 font-weight-bold text-primary mt-2">Grupo Malima</h1>
-              <p class="text-body-2 text-medium-emphasis">Sistema de Invernaderos</p>
+              <img src="/logo_malima.png" height="120" style="object-fit: contain" />
             </div>
 
             <v-card rounded="lg" elevation="3" class="pa-6">
@@ -54,10 +52,6 @@
                 Ingresar
               </v-btn>
             </v-card>
-
-            <p class="text-center text-caption text-medium-emphasis mt-4">
-              Desarrollado por Maintronic · v1.0.0
-            </p>
           </v-col>
         </v-row>
       </v-container>
