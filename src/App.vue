@@ -16,6 +16,12 @@
           to="/meteorologia"
         />
       </v-list>
+      <v-list-item
+        v-if="authStore.isAdmin"
+        prepend-icon="mdi-cog"
+        title="Configuración"
+        to="/configuracion"
+      />
       <template #append>
         <v-divider />
         <v-list-item

@@ -29,6 +29,12 @@ const router = createRouter({
       name: 'meteorologia',
       component: () => import('../views/MeteorologiaView.vue'),
     },
+    {
+      path: '/configuracion',
+      name: 'configuracion',
+      component: () => import('../views/ConfiguracionView.vue'),
+      meta: { soloAdmin: true },
+    },
   ],
 })
 
