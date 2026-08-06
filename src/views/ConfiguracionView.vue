@@ -1,5 +1,6 @@
 <template>
-  <v-container fluid class="pa-6">
+  <v-container fluid class="pa-4">
+    <!-- Header -->
     <v-row class="mb-4" align="center">
       <v-col>
         <h1 class="text-h5 font-weight-bold text-primary">Configuración</h1>
@@ -10,33 +11,25 @@
     <v-row>
       <v-col cols="12" md="8" lg="6">
         <v-card rounded="lg" elevation="2">
-          <v-card-title class="d-flex align-center gap-2 pa-4">
+          <v-card-title class="d-flex align-center gap-2 pa-1">
             <v-icon color="primary">mdi-cog</v-icon>
-            <span>Parámetros de TinkerBoard</span>
+            <span class="text-body-1 font-weight-bold">Parámetros TinkerBoard</span>
           </v-card-title>
 
           <v-divider />
 
           <v-card-text class="pa-4">
-            <v-row
-              v-for="config in configuraciones"
-              :key="config.clave"
-              align="center"
-              class="mb-3"
-            >
-              <v-col cols="12" sm="5">
-                <p class="text-body-2 font-weight-medium">{{ config.descripcion }}</p>
-                <p class="text-caption text-medium-emphasis">{{ config.clave }}</p>
-              </v-col>
-              <v-col cols="12" sm="5">
+            <div v-for="config in configuraciones" :key="config.clave" class="mb-4">
+              <p class="text-body-2 font-weight-medium mb-1">{{ config.descripcion }}</p>
+              <p class="text-caption text-medium-emphasis mb-2">{{ config.clave }}</p>
+              <div class="d-flex gap-2 align-center">
                 <v-text-field
                   v-model="config.valor"
                   density="compact"
                   variant="outlined"
                   hide-details
+                  class="flex-grow-1"
                 />
-              </v-col>
-              <v-col cols="12" sm="2">
                 <v-btn
                   color="primary"
                   variant="tonal"
@@ -45,8 +38,9 @@
                   :loading="guardando === config.clave"
                   @click="guardar(config.clave, config.valor)"
                 />
-              </v-col>
-            </v-row>
+              </div>
+              <v-divider class="mt-4" />
+            </div>
           </v-card-text>
         </v-card>
       </v-col>

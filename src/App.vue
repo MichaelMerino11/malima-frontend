@@ -6,7 +6,7 @@ import { ref, computed, watch, onMounted } from 'vue'
     <v-app-bar v-if="mobile" flat color="white" border="b" elevation="1">
       <v-app-bar-nav-icon @click="drawerOpen = !drawerOpen" />
       <v-app-bar-title>
-        <img src="/logo_malima.png" height="32" style="vertical-align: middle" />
+        <img src="/logo_malima.png" height="28" style="vertical-align: middle; margin-top: 4px" />
       </v-app-bar-title>
     </v-app-bar>
 
