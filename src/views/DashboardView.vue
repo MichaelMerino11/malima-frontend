@@ -23,18 +23,20 @@
                   color="success"
                   variant="tonal"
                   prepend-icon="mdi-arrow-up-circle"
+                  disabled
                   @click="abrirZona(zona.id)"
                 >
-                  {{ mobile ? '' : 'Abrir todo' }}
+                  <span v-if="!mobile">Abrir todo</span>
                 </v-btn>
                 <v-btn
                   size="small"
                   color="error"
                   variant="tonal"
                   prepend-icon="mdi-arrow-down-circle"
+                  disabled
                   @click="cerrarZona(zona.id)"
                 >
-                  {{ mobile ? '' : 'Cerrar todo' }}
+                  <span v-if="!mobile">Cerrar todo</span>
                 </v-btn>
               </div>
             </div>

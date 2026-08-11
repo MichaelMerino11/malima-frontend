@@ -21,6 +21,7 @@
           variant="tonal"
           :size="mobile ? 'small' : 'default'"
           prepend-icon="mdi-arrow-up-circle"
+          disabled
           @click="abrirTodo"
         >
           {{ mobile ? 'Abrir' : 'Abrir todo' }}
@@ -30,6 +31,7 @@
           variant="tonal"
           :size="mobile ? 'small' : 'default'"
           prepend-icon="mdi-arrow-down-circle"
+          disabled
           @click="cerrarTodo"
         >
           {{ mobile ? 'Cerrar' : 'Cerrar todo' }}
