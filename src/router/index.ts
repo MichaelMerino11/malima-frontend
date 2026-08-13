@@ -35,6 +35,23 @@ const router = createRouter({
       component: () => import('../views/ConfiguracionView.vue'),
       meta: { soloAdmin: true },
     },
+    {
+      path: '/perfil',
+      name: 'perfil',
+      component: () => import('../views/PerfilView.vue'),
+    },
+    {
+      path: '/usuarios',
+      name: 'usuarios',
+      component: () => import('../views/UsuariosView.vue'),
+      meta: { soloAdmin: true },
+    },
+    {
+      path: '/restablecer-password',
+      name: 'restablecer-password',
+      component: () => import('../views/RestablecerPasswordView.vue'),
+      meta: { publica: true },
+    },
   ],
 })
 

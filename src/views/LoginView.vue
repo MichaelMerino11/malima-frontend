@@ -51,6 +51,12 @@
               <v-btn color="primary" size="large" block :loading="cargando" @click="handleLogin">
                 Ingresar
               </v-btn>
+
+              <div class="text-center mt-3">
+                <v-btn variant="text" size="small" to="/restablecer-password">
+                  ¿Olvidaste tu contraseña?
+                </v-btn>
+              </div>
             </v-card>
           </v-col>
         </v-row>
