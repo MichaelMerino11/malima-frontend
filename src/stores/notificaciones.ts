@@ -22,7 +22,12 @@ export const useNotificacionesStore = defineStore('notificaciones', () => {
       leida: false,
     })
 
-    // Máximo 20 notificaciones
+    const campana = document.querySelector('.mdi-bell')
+    if (campana) {
+      campana.classList.add('bounce')
+      setTimeout(() => campana.classList.remove('bounce'), 500)
+    }
+
     if (notificaciones.value.length > 20) {
       notificaciones.value.pop()
     }

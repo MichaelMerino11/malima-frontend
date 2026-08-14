@@ -20,7 +20,7 @@
           :color="conexionTinker ? 'success' : 'error'"
           variant="tonal"
           :prepend-icon="conexionTinker ? 'mdi-wifi' : 'mdi-wifi-off'"
-          size="large"
+          :class="!conexionTinker ? 'pulsing' : ''"
         >
           {{ conexionTinker ? 'TinkerBoard conectada' : 'TinkerBoard desconectada' }}
         </v-chip>
@@ -29,28 +29,52 @@
 
     <v-row class="mb-4">
       <v-col cols="6" sm="4" md="2">
-        <v-card rounded="lg" elevation="2" class="pa-3 text-center" color="primary" variant="tonal">
+        <v-card
+          rounded="lg"
+          elevation="2"
+          class="pa-3 text-center fade-in"
+          color="primary"
+          variant="tonal"
+        >
           <v-icon size="28" color="primary">mdi-greenhouse</v-icon>
           <p class="text-h5 font-weight-bold mt-1">{{ resumen.total }}</p>
           <p class="text-caption text-medium-emphasis">Invernaderos</p>
         </v-card>
       </v-col>
       <v-col cols="6" sm="4" md="2">
-        <v-card rounded="lg" elevation="2" class="pa-3 text-center" color="success" variant="tonal">
+        <v-card
+          rounded="lg"
+          elevation="2"
+          class="pa-3 text-center fade-in"
+          color="success"
+          variant="tonal"
+        >
           <v-icon size="28" color="success">mdi-arrow-up-circle</v-icon>
           <p class="text-h5 font-weight-bold mt-1 text-success">{{ resumen.abiertos }}</p>
           <p class="text-caption text-medium-emphasis">Abiertos</p>
         </v-card>
       </v-col>
       <v-col cols="6" sm="4" md="2">
-        <v-card rounded="lg" elevation="2" class="pa-3 text-center" color="error" variant="tonal">
+        <v-card
+          rounded="lg"
+          elevation="2"
+          class="pa-3 text-center fade-in"
+          color="error"
+          variant="tonal"
+        >
           <v-icon size="28" color="error">mdi-arrow-down-circle</v-icon>
           <p class="text-h5 font-weight-bold mt-1 text-error">{{ resumen.cerrados }}</p>
           <p class="text-caption text-medium-emphasis">Cerrados</p>
         </v-card>
       </v-col>
       <v-col cols="6" sm="4" md="2">
-        <v-card rounded="lg" elevation="2" class="pa-3 text-center" color="warning" variant="tonal">
+        <v-card
+          rounded="lg"
+          elevation="2"
+          class="pa-3 text-center fade-in"
+          color="warning"
+          variant="tonal"
+        >
           <v-icon size="28" color="warning" :class="resumen.en_movimiento > 0 ? 'rotating' : ''"
             >mdi-loading</v-icon
           >
@@ -59,7 +83,13 @@
         </v-card>
       </v-col>
       <v-col cols="6" sm="4" md="2">
-        <v-card rounded="lg" elevation="2" class="pa-3 text-center" color="info" variant="tonal">
+        <v-card
+          rounded="lg"
+          elevation="2"
+          class="pa-3 text-center fade-in"
+          color="info"
+          variant="tonal"
+        >
           <v-icon size="28" color="info">mdi-robot</v-icon>
           <p class="text-h5 font-weight-bold mt-1 text-info">{{ resumen.en_automatico }}</p>
           <p class="text-caption text-medium-emphasis">Automático</p>
@@ -127,7 +157,11 @@
               <div class="d-flex align-center justify-space-between">
                 <div class="d-flex align-center gap-2">
                   <v-icon color="blue">mdi-weather-rainy</v-icon>
-                  <span class="text-body-2">Probabilidad <details></details> lluvia</span>
+                  <span class="text-body-2"
+                    >Probabilidad
+                    <details></details>
+                    lluvia</span
+                  >
                 </div>
                 <v-chip
                   size="small"

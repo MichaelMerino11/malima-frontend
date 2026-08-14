@@ -42,11 +42,17 @@
     <!-- Invernaderos -->
     <v-row>
       <v-col v-for="inv in invernaderos" :key="inv.id" cols="12" sm="6" md="4">
-        <v-card rounded="lg" elevation="2">
+        <v-card rounded="lg" elevation="2" class="fade-in">
           <v-card-title class="pa-3 pb-2">
             <div class="d-flex align-center justify-space-between">
               <div class="d-flex align-center gap-2">
-                <v-icon :color="colorEstado(inv.estado)" size="20">mdi-greenhouse</v-icon>
+                <v-icon
+                  :color="colorEstado(inv.estado)"
+                  size="20"
+                  :class="inv.estado === 'en_movimiento' ? 'rotating' : ''"
+                >
+                  mdi-greenhouse
+                </v-icon>
                 <span class="text-body-2 font-weight-medium">{{ inv.nombre }}</span>
               </div>
               <v-chip :color="colorEstado(inv.estado)" size="x-small">
