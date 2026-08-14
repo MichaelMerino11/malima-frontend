@@ -29,6 +29,19 @@ const vuetify = createVuetify({
           success: '#2E7D32',
         },
       },
+      dark: {
+        colors: {
+          primary: '#5C8AE6',
+          secondary: '#4CAF50',
+          accent: '#81C784',
+          background: '#121212',
+          surface: '#1E1E1E',
+          error: '#EF5350',
+          warning: '#FFA726',
+          info: '#29B6F6',
+          success: '#66BB6A',
+        },
+      },
     },
   },
 })

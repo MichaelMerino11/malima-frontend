@@ -12,7 +12,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      redirect: '/dashboard',
+      redirect: '/home',
     },
     {
       path: '/dashboard',
@@ -56,6 +56,11 @@ const router = createRouter({
       path: '/eventos',
       name: 'eventos',
       component: () => import('../views/EventosView.vue'),
+    },
+    {
+      path: '/home',
+      name: 'home',
+      component: () => import('../views/HomeView.vue'),
     },
   ],
 })

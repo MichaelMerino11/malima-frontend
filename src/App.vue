@@ -1,12 +1,15 @@
 <template>
   <v-app>
     <!-- HEADER MÓVIL -->
-    <v-app-bar v-if="mobile" flat color="white" border="b" elevation="1">
+    <v-app-bar v-if="mobile" flat color="surface" border="b" elevation="1">
       <v-app-bar-nav-icon @click="drawerOpen = !drawerOpen" />
       <v-app-bar-title>
         <img src="/logo_malima.png" height="28" style="vertical-align: middle; margin-top: 4px" />
       </v-app-bar-title>
       <template #append>
+        <v-btn icon @click="toggleTema">
+          <v-icon>{{ temaStore.oscuro ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+        </v-btn>
         <v-btn icon @click="panelNotif = !panelNotif">
           <v-badge
             :content="notifStore.sinLeer()"
@@ -37,27 +40,33 @@
           style="object-fit: contain"
         />
         <img v-else src="/logo_malima_icono.png" height="32" style="object-fit: contain" />
-        <!-- Campana en sidebar expandido desktop -->
-        <v-btn
-          v-if="(hovered || mobile) && !mobile"
-          icon
-          size="small"
-          variant="text"
-          @click="panelNotif = !panelNotif"
-        >
-          <v-badge
-            :content="notifStore.sinLeer()"
-            :model-value="notifStore.sinLeer() > 0"
-            color="error"
-          >
-            <v-icon size="20">mdi-bell</v-icon>
-          </v-badge>
-        </v-btn>
+        <div v-if="(hovered || mobile) && !mobile" class="d-flex gap-1">
+          <v-btn icon size="small" variant="text" @click="toggleTema">
+            <v-icon size="20">{{
+              temaStore.oscuro ? 'mdi-weather-sunny' : 'mdi-weather-night'
+            }}</v-icon>
+          </v-btn>
+          <v-btn icon size="small" variant="text" @click="panelNotif = !panelNotif">
+            <v-badge
+              :content="notifStore.sinLeer()"
+              :model-value="notifStore.sinLeer() > 0"
+              color="error"
+            >
+              <v-icon size="20">mdi-bell</v-icon>
+            </v-badge>
+          </v-btn>
+        </div>
       </div>
 
       <v-divider />
 
       <v-list nav>
+        <v-list-item
+          prepend-icon="mdi-home"
+          title="Inicio"
+          to="/home"
+          @click="mobile && (drawerOpen = false)"
+        />
         <v-list-item
           prepend-icon="mdi-view-dashboard"
           title="Dashboard"
@@ -115,9 +124,9 @@
       <div class="d-flex align-center justify-space-between pa-4">
         <span class="text-body-1 font-weight-bold">Notificaciones</span>
         <div class="d-flex gap-1">
-          <v-btn size="small" variant="text" @click="notifStore.marcarTodasLeidas()">
-            Marcar todas leídas
-          </v-btn>
+          <v-btn size="small" variant="text" @click="notifStore.marcarTodasLeidas()"
+            >Marcar todas leídas</v-btn
+          >
           <v-btn icon size="small" variant="text" @click="panelNotif = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
@@ -177,15 +186,16 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
-import { useDisplay } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 import { useAuthStore } from './stores/auth'
 import { useNotificacionesStore } from './stores/notificaciones'
-import { useMeteorologiaStore } from './stores/meteorologia'
+import { useTemaStore } from './stores/tema'
 import api from './api/axios'
 
 const authStore = useAuthStore()
 const notifStore = useNotificacionesStore()
-const meteoStore = useMeteorologiaStore()
+const temaStore = useTemaStore()
+const theme = useTheme()
 const router = useRouter()
 const { mobile } = useDisplay()
 
@@ -199,11 +209,14 @@ const formatHora = (fecha: Date) => {
   return fecha.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
+const toggleTema = () => {
+  temaStore.toggleTema()
+  theme.global.name.value = temaStore.oscuro ? 'dark' : 'light'
+}
+
 const verificarAlertas = async () => {
   if (!authStore.isAuthenticated) return
-
   try {
-    // Verificar clima de todas las zonas
     const { data } = await api.get('/zonas')
     if (data.ok) {
       for (const zona of data.data) {
@@ -240,6 +253,7 @@ const logout = () => {
 }
 
 onMounted(async () => {
+  theme.global.name.value = temaStore.oscuro ? 'dark' : 'light'
   await authStore.cargarUsuario()
   await verificarAlertas()
   intervaloNotif = setInterval(verificarAlertas, 60000)
