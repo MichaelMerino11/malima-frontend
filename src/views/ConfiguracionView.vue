@@ -9,7 +9,7 @@
     </v-row>
 
     <v-row>
-      <v-col cols="12" md="8" lg="6">
+      <v-col cols="12">
         <v-card rounded="lg" elevation="2">
           <v-card-title class="d-flex align-center gap-2 pa-1">
             <v-icon color="primary">mdi-cog</v-icon>
@@ -19,28 +19,30 @@
           <v-divider />
 
           <v-card-text class="pa-4">
-            <div v-for="config in configuraciones" :key="config.clave" class="mb-4">
-              <p class="text-body-2 font-weight-medium mb-1">{{ config.descripcion }}</p>
-              <p class="text-caption text-medium-emphasis mb-2">{{ config.clave }}</p>
-              <div class="d-flex gap-2 align-center">
-                <v-text-field
-                  v-model="config.valor"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="flex-grow-1"
-                />
-                <v-btn
-                  color="primary"
-                  variant="tonal"
-                  size="small"
-                  icon="mdi-content-save"
-                  :loading="guardando === config.clave"
-                  @click="guardar(config.clave, config.valor)"
-                />
-              </div>
-              <v-divider class="mt-4" />
-            </div>
+            <v-row>
+              <v-col v-for="config in configuraciones" :key="config.clave" cols="12" md="6">
+                <p class="text-body-2 font-weight-medium mb-1">{{ config.descripcion }}</p>
+                <p class="text-caption text-medium-emphasis mb-2">{{ config.clave }}</p>
+                <div class="d-flex align-center">
+                  <v-text-field
+                    v-model="config.valor"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="campo-config"
+                  />
+
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                    icon="mdi-content-save"
+                    :loading="guardando === config.clave"
+                    @click="guardar(config.clave, config.valor)"
+                  />
+                </div>
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
       </v-col>
@@ -89,3 +91,10 @@ const guardar = async (clave: string, valor: string) => {
 
 onMounted(cargar)
 </script>
+
+<style scoped>
+.campo-config {
+  flex: 1;
+  margin-right: 12px;
+}
+</style>

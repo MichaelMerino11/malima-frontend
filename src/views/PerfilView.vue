@@ -1,6 +1,5 @@
 <template>
   <v-container fluid class="pa-4">
-
     <v-row class="mb-4">
       <v-col>
         <h1 class="text-h5 font-weight-bold text-primary">Mi perfil</h1>
@@ -10,9 +9,8 @@
 
     <v-row>
       <v-col cols="12" md="6">
-
         <!-- Datos personales -->
-        <v-card rounded="lg" elevation="2" class="mb-4">
+        <v-card rounded="lg" elevation="2">
           <v-card-title class="d-flex align-center gap-2 pa-4">
             <v-icon color="primary">mdi-account</v-icon>
             <span class="text-body-1 font-weight-bold">Datos personales</span>
@@ -47,7 +45,9 @@
             </v-btn>
           </v-card-actions>
         </v-card>
+      </v-col>
 
+      <v-col cols="12" md="6">
         <!-- Cambiar contraseña -->
         <v-card rounded="lg" elevation="2">
           <v-card-title class="d-flex align-center gap-2 pa-4">
@@ -101,14 +101,12 @@
             </v-btn>
           </v-card-actions>
         </v-card>
-
       </v-col>
     </v-row>
 
     <v-snackbar v-model="snackbar.visible" :color="snackbar.color" timeout="3000">
       {{ snackbar.mensaje }}
     </v-snackbar>
-
   </v-container>
 </template>
 
@@ -128,7 +126,8 @@ const snackbar = reactive({ visible: false, mensaje: '', color: 'success' })
 
 const errorConfirmar = computed(() =>
   passwords.confirmar && passwords.nuevo !== passwords.confirmar
-    ? 'Las contraseñas no coinciden' : ''
+    ? 'Las contraseñas no coinciden'
+    : '',
 )
 
 const mostrarSnackbar = (mensaje: string, color = 'success') => {
@@ -142,7 +141,7 @@ const guardarPerfil = async () => {
   try {
     const { data } = await api.patch('/usuarios/perfil', {
       nombre: perfil.nombre,
-      email: perfil.email
+      email: perfil.email,
     })
     if (data.ok) {
       mostrarSnackbar('Perfil actualizado correctamente')
@@ -163,7 +162,7 @@ const cambiarPassword = async () => {
   try {
     const { data } = await api.patch('/usuarios/cambiar-password', {
       password_actual: passwords.actual,
-      password_nuevo: passwords.nuevo
+      password_nuevo: passwords.nuevo,
     })
     if (data.ok) {
       mostrarSnackbar('Contraseña actualizada correctamente')
