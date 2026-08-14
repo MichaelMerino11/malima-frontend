@@ -151,6 +151,13 @@
         </v-col>
       </v-row>
 
+      <!-- Gráfico -->
+      <v-row class="mb-2">
+        <v-col cols="12">
+          <GraficoMeteo :datos="historial" />
+        </v-col>
+      </v-row>
+
       <!-- Historial y detalles -->
       <v-row>
         <!-- Historial -->
@@ -307,6 +314,7 @@ import { useDisplay } from 'vuetify'
 import { useMeteorologiaStore } from '../stores/meteorologia'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
+import GraficoMeteo from '../components/meteorologia/GraficoMeteo.vue'
 import api from '../api/axios'
 
 const store = useMeteorologiaStore()
