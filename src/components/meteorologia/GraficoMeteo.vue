@@ -1,10 +1,13 @@
 <template>
   <v-card rounded="lg" elevation="2">
+    <!-- HEADER -->
     <v-card-title class="d-flex align-center justify-space-between pa-4 flex-wrap gap-2">
       <div class="d-flex align-center gap-2">
-        <v-icon color="primary">mdi-chart-line</v-icon>
-        <span class="text-body-1 font-weight-bold">Tendencia climática</span>
+        <v-icon color="primary"> mdi-chart-line </v-icon>
+
+        <span class="text-body-1 font-weight-bold"> Tendencia climática </span>
       </div>
+
       <v-btn-toggle
         v-model="metricaActiva"
         mandatory
@@ -12,27 +15,56 @@
         variant="outlined"
         color="primary"
       >
-        <v-btn value="temperatura" size="small">Temp.</v-btn>
-        <v-btn value="humedad" size="small">Humedad</v-btn>
-        <v-btn value="velocidad_viento" size="small">Viento</v-btn>
-        <v-btn value="radiacion_solar" size="small">Radiación</v-btn>
+        <v-btn value="temperatura" size="small"> Temp. </v-btn>
+
+        <v-btn value="humedad" size="small"> Humedad </v-btn>
+
+        <v-btn value="velocidad_viento" size="small"> Viento </v-btn>
+
+        <v-btn value="radiacion_solar" size="small"> Radiación </v-btn>
       </v-btn-toggle>
     </v-card-title>
+
     <v-divider />
+
     <v-card-text class="pa-4">
-      <div v-if="datos.length === 0" class="text-center py-8">
-        <v-icon size="48" color="grey-lighten-2">mdi-chart-line-variant</v-icon>
+      <!-- SIN DATOS -->
+      <div v-if="datosOrdenados.length === 0" class="text-center py-8">
+        <v-icon size="48" color="grey-lighten-2"> mdi-chart-line-variant </v-icon>
+
         <p class="text-body-2 text-medium-emphasis mt-2">
           Sin datos suficientes para mostrar gráfico
         </p>
       </div>
-      <div v-else ref="contenedorRef" style="width: 100%; height: 280px" />
+
+      <!-- GRÁFICO -->
+      <VChart v-else class="grafico-meteo" :option="chartOption" autoresize />
     </v-card-text>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { computed, ref } from 'vue'
+
+import VChart from 'vue-echarts'
+
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart } from 'echarts/charts'
+
+import { GridComponent, TooltipComponent } from 'echarts/components'
+
+import type { EChartsOption } from 'echarts'
+
+/* =========================================================
+ * ECHARTS
+ * ======================================================= */
+
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
+
+/* =========================================================
+ * TIPOS
+ * ======================================================= */
 
 interface DatoMeteo {
   registrado_at: string
@@ -43,23 +75,66 @@ interface DatoMeteo {
   probabilidad_lluvia: number
 }
 
+type MetricaKey = 'temperatura' | 'humedad' | 'velocidad_viento' | 'radiacion_solar'
+
 interface MetricaConfig {
   label: string
   color: string
   unidad: string
+  decimales: number
 }
 
-const props = defineProps<{ datos: DatoMeteo[] }>()
-const contenedorRef = ref<HTMLDivElement | null>(null)
-const metricaActiva = ref<string>('temperatura')
-let svgEl: SVGSVGElement | null = null
+/* =========================================================
+ * PROPS
+ * ======================================================= */
 
-const config: Record<string, MetricaConfig> = {
-  temperatura: { label: 'Temperatura', color: '#D32F2F', unidad: '°C' },
-  humedad: { label: 'Humedad', color: '#0288D1', unidad: '%' },
-  velocidad_viento: { label: 'Viento', color: '#F57C00', unidad: ' km/h' },
-  radiacion_solar: { label: 'Radiación solar', color: '#F9A825', unidad: ' W/m²' },
+const props = defineProps<{
+  datos: DatoMeteo[]
+}>()
+
+/* =========================================================
+ * ESTADO
+ * ======================================================= */
+
+const metricaActiva = ref<MetricaKey>('temperatura')
+
+/* =========================================================
+ * CONFIGURACIÓN DE MÉTRICAS
+ * ======================================================= */
+
+const config: Record<MetricaKey, MetricaConfig> = {
+  temperatura: {
+    label: 'Temperatura',
+    color: '#D32F2F',
+    unidad: '°C',
+    decimales: 1,
+  },
+
+  humedad: {
+    label: 'Humedad',
+    color: '#0288D1',
+    unidad: '%',
+    decimales: 1,
+  },
+
+  velocidad_viento: {
+    label: 'Viento',
+    color: '#F57C00',
+    unidad: 'km/h',
+    decimales: 1,
+  },
+
+  radiacion_solar: {
+    label: 'Radiación solar',
+    color: '#F9A825',
+    unidad: 'W/m²',
+    decimales: 0,
+  },
 }
+
+/* =========================================================
+ * HELPERS
+ * ======================================================= */
 
 const formatHora = (fecha: string) => {
   return new Date(fecha).toLocaleTimeString('es-EC', {
@@ -69,136 +144,249 @@ const formatHora = (fecha: string) => {
   })
 }
 
-const renderSVG = async () => {
-  await nextTick()
-  if (!contenedorRef.value || props.datos.length === 0) return
+const formatValor = (valor: number, cfg: MetricaConfig) => {
+  const numero = Number(valor).toFixed(cfg.decimales)
 
-  const contenedor = contenedorRef.value
-  if (svgEl) contenedor.removeChild(svgEl)
-
-  const W = contenedor.clientWidth || 800
-  const H = 280
-  const pad = { top: 20, right: 20, bottom: 40, left: 55 }
-  const innerW = W - pad.left - pad.right
-  const innerH = H - pad.top - pad.bottom
-
-  const datosOrdenados = [...props.datos].reverse()
-  const cfg = config[metricaActiva.value] as MetricaConfig
-  const valores = datosOrdenados.map((d) => Number(d[metricaActiva.value as keyof DatoMeteo]))
-  const labels = datosOrdenados.map((d) => formatHora(d.registrado_at))
-
-  const minV = Math.min(...valores) * 0.95
-  const maxV = Math.max(...valores) * 1.05
-  const rangoV = maxV - minV || 1
-
-  const xPos = (i: number) => pad.left + (i / (valores.length - 1)) * innerW
-  const yPos = (v: number) => pad.top + innerH - ((v - minV) / rangoV) * innerH
-
-  const ns = 'http://www.w3.org/2000/svg'
-  const svg = document.createElementNS(ns, 'svg')
-  svg.setAttribute('width', '100%')
-  svg.setAttribute('height', String(H))
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
-
-  // Área rellena
-  const areaPoints = [
-    `${xPos(0)},${pad.top + innerH}`,
-    ...valores.map((v, i) => `${xPos(i)},${yPos(v)}`),
-    `${xPos(valores.length - 1)},${pad.top + innerH}`,
-  ].join(' ')
-
-  const area = document.createElementNS(ns, 'polygon')
-  area.setAttribute('points', areaPoints)
-  area.setAttribute('fill', cfg.color + '22')
-  svg.appendChild(area)
-
-  // Línea
-  const linePoints = valores.map((v, i) => `${xPos(i)},${yPos(v)}`).join(' ')
-  const line = document.createElementNS(ns, 'polyline')
-  line.setAttribute('points', linePoints)
-  line.setAttribute('fill', 'none')
-  line.setAttribute('stroke', cfg.color)
-  line.setAttribute('stroke-width', '2')
-  line.setAttribute('stroke-linejoin', 'round')
-  svg.appendChild(line)
-
-  // Puntos
-  valores.forEach((v, i) => {
-    const circle = document.createElementNS(ns, 'circle')
-    circle.setAttribute('cx', String(xPos(i)))
-    circle.setAttribute('cy', String(yPos(v)))
-    circle.setAttribute('r', '3')
-    circle.setAttribute('fill', cfg.color)
-    svg.appendChild(circle)
-  })
-
-  // Eje Y — 5 líneas
-  for (let t = 0; t <= 4; t++) {
-    const v = minV + (rangoV * t) / 4
-    const y = yPos(v)
-
-    const gridLine = document.createElementNS(ns, 'line')
-    gridLine.setAttribute('x1', String(pad.left))
-    gridLine.setAttribute('x2', String(pad.left + innerW))
-    gridLine.setAttribute('y1', String(y))
-    gridLine.setAttribute('y2', String(y))
-    gridLine.setAttribute('stroke', '#e0e0e0')
-    gridLine.setAttribute('stroke-width', '1')
-    svg.appendChild(gridLine)
-
-    const text = document.createElementNS(ns, 'text')
-    text.setAttribute('x', String(pad.left - 6))
-    text.setAttribute('y', String(y + 4))
-    text.setAttribute('text-anchor', 'end')
-    text.setAttribute('font-size', '10')
-    text.setAttribute('fill', '#888')
-    text.textContent = `${v.toFixed(1)}${cfg.unidad}`
-    svg.appendChild(text)
+  if (cfg.unidad === '°C' || cfg.unidad === '%') {
+    return `${numero}${cfg.unidad}`
   }
 
-  // Eje X — máximo 8 etiquetas
-  const paso = Math.max(1, Math.floor(labels.length / 8))
-  labels.forEach((label, i) => {
-    if (i % paso !== 0 && i !== labels.length - 1) return
-    const text = document.createElementNS(ns, 'text')
-    text.setAttribute('x', String(xPos(i)))
-    text.setAttribute('y', String(H - 8))
-    text.setAttribute('text-anchor', 'middle')
-    text.setAttribute('font-size', '10')
-    text.setAttribute('fill', '#888')
-    text.textContent = label
-    svg.appendChild(text)
-  })
-
-  svgEl = svg
-  contenedor.appendChild(svg)
+  return `${numero} ${cfg.unidad}`
 }
 
-watch(
-  () => props.datos,
-  async (newDatos) => {
-    if (newDatos.length > 0) {
-      await nextTick()
-      setTimeout(renderSVG, 150)
-    }
-  },
-  { deep: true, immediate: true },
-)
+/* =========================================================
+ * DATOS ORDENADOS
+ * ======================================================= */
 
-watch(metricaActiva, renderSVG)
-
-onMounted(async () => {
-  await nextTick()
-  setTimeout(renderSVG, 300)
+/*
+ * No dependemos de que el backend devuelva ASC o DESC.
+ * Siempre ordenamos cronológicamente.
+ */
+const datosOrdenados = computed(() => {
+  return [...props.datos]
+    .filter((dato) => dato?.registrado_at)
+    .sort((a, b) => new Date(a.registrado_at).getTime() - new Date(b.registrado_at).getTime())
 })
 
-onUnmounted(() => {
-  if (svgEl && contenedorRef.value) {
-    contenedorRef.value.removeChild(svgEl)
+/* =========================================================
+ * OPCIONES DEL GRÁFICO
+ * ======================================================= */
+
+const chartOption = computed<EChartsOption>(() => {
+  const metrica = metricaActiva.value
+  const cfg = config[metrica]
+
+  const registros = datosOrdenados.value
+
+  const labels = registros.map((dato) => formatHora(dato.registrado_at))
+
+  const valores = registros.map((dato) => {
+    const valor = Number(dato[metrica])
+
+    return Number.isFinite(valor) ? valor : 0
+  })
+
+  /*
+   * Calculamos un rango Y dinámico.
+   *
+   * Esto evita que una temperatura de 20.0 - 20.5 °C
+   * se vea aplastada contra el gráfico.
+   */
+  const minValor = valores.length > 0 ? Math.min(...valores) : 0
+
+  const maxValor = valores.length > 0 ? Math.max(...valores) : 1
+
+  const rango = maxValor - minValor
+
+  const margen = rango > 0 ? rango * 0.15 : Math.max(Math.abs(maxValor) * 0.05, 1)
+
+  const minimoEje = minValor - margen
+  const maximoEje = maxValor + margen
+
+  return {
+    animation: true,
+
+    animationDuration: 450,
+
+    animationDurationUpdate: 450,
+
+    animationEasing: 'cubicOut',
+
+    animationEasingUpdate: 'cubicOut',
+
+    grid: {
+      top: 20,
+      right: 20,
+      bottom: 45,
+      left: 70,
+    },
+
+    /* =====================================================
+     * TOOLTIP
+     * =================================================== */
+
+    tooltip: {
+      trigger: 'axis',
+
+      backgroundColor: 'rgba(255, 255, 255, 0.97)',
+
+      borderColor: '#E0E0E0',
+
+      borderWidth: 1,
+
+      padding: [8, 12],
+
+      textStyle: {
+        color: '#424242',
+        fontSize: 12,
+      },
+
+      axisPointer: {
+        type: 'line',
+
+        lineStyle: {
+          color: cfg.color,
+          width: 1,
+          opacity: 0.35,
+        },
+      },
+
+      valueFormatter: (value) => {
+        return formatValor(Number(value), cfg)
+      },
+    },
+
+    /* =====================================================
+     * EJE X
+     * =================================================== */
+
+    xAxis: {
+      type: 'category',
+
+      boundaryGap: false,
+
+      data: labels,
+
+      axisTick: {
+        show: false,
+      },
+
+      axisLine: {
+        lineStyle: {
+          color: '#E0E0E0',
+        },
+      },
+
+      axisLabel: {
+        color: '#757575',
+        fontSize: 10,
+
+        hideOverlap: true,
+
+        margin: 12,
+      },
+    },
+
+    /* =====================================================
+     * EJE Y
+     * =================================================== */
+
+    yAxis: {
+      type: 'value',
+
+      min: minimoEje,
+
+      max: maximoEje,
+
+      splitNumber: 4,
+
+      axisLine: {
+        show: false,
+      },
+
+      axisTick: {
+        show: false,
+      },
+
+      axisLabel: {
+        color: '#757575',
+
+        fontSize: 10,
+
+        formatter: (value: number) => {
+          return formatValor(value, cfg)
+        },
+      },
+
+      splitLine: {
+        lineStyle: {
+          color: '#EEEEEE',
+          width: 1,
+        },
+      },
+    },
+
+    /* =====================================================
+     * SERIE
+     * =================================================== */
+
+    series: [
+      {
+        name: cfg.label,
+
+        type: 'line',
+
+        data: valores,
+
+        smooth: 0.25,
+
+        symbol: 'circle',
+
+        symbolSize: 6,
+
+        showSymbol: valores.length <= 40,
+
+        itemStyle: {
+          color: cfg.color,
+        },
+
+        lineStyle: {
+          color: cfg.color,
+          width: 2.5,
+        },
+
+        areaStyle: {
+          color: cfg.color,
+          opacity: 0.1,
+        },
+
+        emphasis: {
+          focus: 'series',
+
+          itemStyle: {
+            borderColor: '#FFFFFF',
+            borderWidth: 2,
+          },
+
+          lineStyle: {
+            width: 3,
+          },
+        },
+      },
+    ],
   }
 })
 </script>
 
 <script lang="ts">
-export default { name: 'GraficoMeteo' }
+export default {
+  name: 'GraficoMeteo',
+}
 </script>
+
+<style scoped>
+.grafico-meteo {
+  width: 100%;
+  height: 280px;
+}
+</style>
