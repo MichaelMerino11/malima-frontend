@@ -1,21 +1,87 @@
 <template>
   <v-container fluid class="pa-4">
+    <!-- Header -->
     <v-row class="mb-4" align="center">
       <v-col>
         <h1 class="text-h5 font-weight-bold text-primary">Dashboard</h1>
         <p class="text-body-2 text-medium-emphasis">Control general de invernaderos</p>
       </v-col>
+      <v-col cols="auto">
+        <v-chip
+          :color="resumen.en_movimiento > 0 ? 'warning' : 'success'"
+          variant="tonal"
+          :prepend-icon="resumen.en_movimiento > 0 ? 'mdi-loading' : 'mdi-check-circle'"
+        >
+          {{
+            resumen.en_movimiento > 0 ? `${resumen.en_movimiento} en movimiento` : 'Sistema estable'
+          }}
+        </v-chip>
+      </v-col>
     </v-row>
 
+    <!-- Tarjetas de resumen -->
+    <v-row class="mb-4">
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="primary">mdi-greenhouse</v-icon>
+          <p class="text-h5 font-weight-bold mt-1">{{ resumen.total }}</p>
+          <p class="text-caption text-medium-emphasis">Total</p>
+        </v-card>
+      </v-col>
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="success">mdi-arrow-up-circle</v-icon>
+          <p class="text-h5 font-weight-bold mt-1 text-success">{{ resumen.abiertos }}</p>
+          <p class="text-caption text-medium-emphasis">Abiertos</p>
+        </v-card>
+      </v-col>
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="error">mdi-arrow-down-circle</v-icon>
+          <p class="text-h5 font-weight-bold mt-1 text-error">{{ resumen.cerrados }}</p>
+          <p class="text-caption text-medium-emphasis">Cerrados</p>
+        </v-card>
+      </v-col>
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="warning" :class="resumen.en_movimiento > 0 ? 'rotating' : ''"
+            >mdi-loading</v-icon
+          >
+          <p class="text-h5 font-weight-bold mt-1 text-warning">{{ resumen.en_movimiento }}</p>
+          <p class="text-caption text-medium-emphasis">En movimiento</p>
+        </v-card>
+      </v-col>
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="info">mdi-robot</v-icon>
+          <p class="text-h5 font-weight-bold mt-1 text-info">{{ resumen.en_automatico }}</p>
+          <p class="text-caption text-medium-emphasis">Automático</p>
+        </v-card>
+      </v-col>
+      <v-col cols="6" sm="4" md="2">
+        <v-card rounded="lg" elevation="2" class="pa-3 text-center">
+          <v-icon size="28" color="secondary">mdi-hand-back-right</v-icon>
+          <p class="text-h5 font-weight-bold mt-1">{{ resumen.en_local }}</p>
+          <p class="text-caption text-medium-emphasis">Local</p>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Zonas -->
     <v-row>
       <v-col v-for="zona in zonas" :key="zona.id" cols="12" md="6">
         <v-card rounded="lg" elevation="2">
-          <!-- Header de zona -->
           <v-card-title class="pa-4 pb-2">
             <div class="d-flex align-center justify-space-between flex-wrap gap-2">
               <div class="d-flex align-center gap-2">
                 <v-icon color="primary">mdi-greenhouse</v-icon>
                 <span class="text-body-1 font-weight-bold">{{ zona.nombre }}</span>
+                <v-chip size="x-small" color="success" variant="tonal">
+                  {{
+                    zona.invernaderos?.filter((i) => i.estado === 'abierto').length ?? 0
+                  }}
+                  abiertos
+                </v-chip>
               </div>
               <div class="d-flex gap-2">
                 <v-btn
@@ -55,7 +121,12 @@
                   :to="`/zona/${zona.id}`"
                   hover
                 >
-                  <v-icon :size="mobile ? 22 : 28">{{ iconoEstado(inv.estado) }}</v-icon>
+                  <v-icon
+                    :size="mobile ? 22 : 28"
+                    :class="inv.estado === 'en_movimiento' ? 'rotating' : ''"
+                  >
+                    {{ iconoEstado(inv.estado) }}
+                  </v-icon>
                   <p class="text-caption font-weight-medium mt-1 text-truncate">{{ inv.nombre }}</p>
                   <v-chip size="x-small" :color="colorEstado(inv.estado)" class="mt-1">
                     {{ inv.estado }}
@@ -89,14 +160,27 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted, reactive } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
+import api from '../api/axios'
 
 const store = useInvernaderosStore()
 const { zonas } = storeToRefs(store)
 const { mobile } = useDisplay()
+
+const resumen = reactive({
+  total: 0,
+  abiertos: 0,
+  cerrados: 0,
+  en_movimiento: 0,
+  en_automatico: 0,
+  en_remoto: 0,
+  en_local: 0,
+})
+
+let intervalo: ReturnType<typeof setInterval>
 
 const colorEstado = (estado: string) => {
   if (estado === 'abierto') return 'success'
@@ -120,10 +204,42 @@ const cerrarZona = async (zona_id: number) => {
   await store.cargarEstadoZona(zona_id)
 }
 
-onMounted(async () => {
+const cargarResumen = async () => {
+  try {
+    const { data } = await api.get('/zonas/resumen')
+    if (data.ok) Object.assign(resumen, data.data)
+  } catch {}
+}
+
+const cargarTodo = async () => {
   await store.cargarZonas()
   for (const zona of zonas.value) {
     await store.cargarEstadoZona(zona.id)
   }
+  await cargarResumen()
+}
+
+onMounted(async () => {
+  await cargarTodo()
+  intervalo = setInterval(cargarTodo, 30000)
+})
+
+onUnmounted(() => {
+  clearInterval(intervalo)
 })
 </script>
+
+<style scoped>
+.rotating {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

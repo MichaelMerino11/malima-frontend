@@ -45,6 +45,12 @@
           @click="mobile && (drawerOpen = false)"
         />
         <v-list-item
+          prepend-icon="mdi-history"
+          title="Historial"
+          to="/eventos"
+          @click="mobile && (drawerOpen = false)"
+        />
+        <v-list-item
           v-if="authStore.isAdmin"
           prepend-icon="mdi-cog"
           title="Configuración"

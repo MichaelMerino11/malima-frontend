@@ -52,6 +52,11 @@ const router = createRouter({
       component: () => import('../views/RestablecerPasswordView.vue'),
       meta: { publica: true },
     },
+    {
+      path: '/eventos',
+      name: 'eventos',
+      component: () => import('../views/EventosView.vue'),
+    },
   ],
 })
 
