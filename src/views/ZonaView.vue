@@ -127,19 +127,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, onUnmounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import { useLoadingStore } from '../stores/loading'
 import ModalConfirmar from '../components/shared/ModalConfirmar.vue'
+import { useSocket } from '../composables/useSocket'
 
 const loadingStore = useLoadingStore()
 const route = useRoute()
 const store = useInvernaderosStore()
 const { zonas } = storeToRefs(store)
 const { mobile } = useDisplay()
+const { unirseAZona, escuchar, dejarDeEscuchar } = useSocket()
 
 const zona_id = computed(() => Number(route.params.id))
 const zonaActual = computed(() => zonas.value.find((z) => z.id === zona_id.value))
@@ -233,7 +235,30 @@ const ejecutarAccion = async () => {
 
 onMounted(async () => {
   loadingStore.mostrar('Cargando zona...')
+
+  if (zonas.value.length === 0) {
+    await store.cargarZonas()
+  }
+
   await store.cargarEstadoZona(zona_id.value)
   loadingStore.ocultar()
+
+  unirseAZona(zona_id.value)
+
+  escuchar('estado-actualizado', async () => {
+    await store.cargarEstadoZona(zona_id.value)
+  })
+
+  escuchar('comando-enviado', (data) => {
+    if (data.resultado === 'exitoso') {
+      mostrarSnackbar('Invernadero actualizado', 'success')
+    }
+    store.cargarEstadoZona(zona_id.value)
+  })
+})
+
+onUnmounted(() => {
+  dejarDeEscuchar('estado-actualizado')
+  dejarDeEscuchar('comando-enviado')
 })
 </script>

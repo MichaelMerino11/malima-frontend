@@ -164,7 +164,9 @@ import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import api from '../api/axios'
 import { useLoadingStore } from '../stores/loading'
+import { useSocket } from '../composables/useSocket'
 
+const { unirseAZona, escuchar, dejarDeEscuchar } = useSocket()
 const loadingStore = useLoadingStore()
 const store = useInvernaderosStore()
 const { zonas } = storeToRefs(store)
@@ -223,10 +225,22 @@ onMounted(async () => {
   loadingStore.mostrar('Cargando invernaderos...')
   await cargarTodo()
   loadingStore.ocultar()
+
+  // Unirse a todas las zonas
+  for (const zona of zonas.value) {
+    unirseAZona(zona.id)
+  }
+
+  escuchar('estado-actualizado', async (data) => {
+    await store.cargarEstadoZona(data.zona_id)
+    await cargarResumen()
+  })
+
   intervalo = setInterval(cargarTodo, 30000)
 })
 
 onUnmounted(() => {
+  dejarDeEscuchar('estado-actualizado')
   clearInterval(intervalo)
 })
 </script>

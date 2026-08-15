@@ -194,6 +194,7 @@ import { useNotificacionesStore } from './stores/notificaciones'
 import { useTemaStore } from './stores/tema'
 import LoadingApp from './components/shared/LoadingApp.vue'
 import { useLoadingStore } from './stores/loading'
+import { useSocket } from './composables/useSocket'
 import api from './api/axios'
 
 const loadingStore = useLoadingStore()
@@ -203,6 +204,7 @@ const temaStore = useTemaStore()
 const theme = useTheme()
 const router = useRouter()
 const { mobile } = useDisplay()
+const { conectar } = useSocket()
 
 const hovered = ref(false)
 const drawerOpen = ref(!mobile.value)
@@ -262,6 +264,7 @@ onMounted(async () => {
   await authStore.cargarUsuario()
   await verificarAlertas()
   intervaloNotif = setInterval(verificarAlertas, 60000)
+  conectar()
 })
 
 onUnmounted(() => {
