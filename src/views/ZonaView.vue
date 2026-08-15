@@ -126,7 +126,9 @@ import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 const route = useRoute()
 const store = useInvernaderosStore()
 const { zonas } = storeToRefs(store)
@@ -191,6 +193,8 @@ const cerrarTodo = async () => {
 }
 
 onMounted(async () => {
+  loadingStore.mostrar('Cargando zona...')
   await store.cargarEstadoZona(zona_id.value)
+  loadingStore.ocultar()
 })
 </script>

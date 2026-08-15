@@ -330,7 +330,9 @@ import GraficoMeteo from '../components/meteorologia/GraficoMeteo.vue'
 import api from '../api/axios'
 import { useExportar } from '../composables/useExportar'
 import ModalExportar from '../components/meteorologia/../shared/ModalExportar.vue'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 const modalExportar = ref(false)
 const { exportarExcel, exportarPDF } = useExportar()
 
@@ -456,9 +458,11 @@ const exportarMeteoPDF = () => {
 }
 
 onMounted(async () => {
+  loadingStore.mostrar('Cargando meteorología...')
   await invernaderosStore.cargarZonas()
   zonaSeleccionada.value = zonas.value[0]?.id ?? 1
   await cargar()
+  loadingStore.ocultar()
   intervalo = setInterval(cargar, 30000)
   intervaloProg = setInterval(() => {
     progreso.value = Math.max(0, progreso.value - 100 / 30)

@@ -114,7 +114,9 @@
 import { onMounted, reactive, ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import api from '../api/axios'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 const authStore = useAuthStore()
 
 const perfil = reactive({ nombre: '', email: '' })
@@ -179,8 +181,11 @@ const cambiarPassword = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  loadingStore.mostrar('Cargando perfil...')
+  await authStore.cargarUsuario()
   perfil.nombre = authStore.usuario?.nombre ?? ''
   perfil.email = authStore.usuario?.email ?? ''
+  loadingStore.ocultar()
 })
 </script>

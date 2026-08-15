@@ -104,7 +104,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import api from '../api/axios'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 interface Usuario {
   id: number
   nombre: string
@@ -232,5 +234,9 @@ const desactivar = async (id: number) => {
   }
 }
 
-onMounted(cargar)
+onMounted(async () => {
+  loadingStore.mostrar('Cargando usuarios...')
+  await cargar()
+  loadingStore.ocultar()
+})
 </script>

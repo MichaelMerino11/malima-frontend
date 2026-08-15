@@ -364,8 +364,10 @@
 import { onMounted, onUnmounted, ref, reactive, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useInvernaderosStore } from '../stores/invernaderos'
+import { useLoadingStore } from '../stores/loading'
 import api from '../api/axios'
 
+const loadingStore = useLoadingStore()
 const authStore = useAuthStore()
 const invernaderosStore = useInvernaderosStore()
 
@@ -429,7 +431,9 @@ const cargar = async () => {
 }
 
 onMounted(async () => {
+  loadingStore.mostrar('Cargando sistema...')
   await cargar()
+  loadingStore.ocultar()
   intervalo = setInterval(cargar, 30000)
 })
 

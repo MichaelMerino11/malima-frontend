@@ -57,7 +57,9 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import api from '../api/axios'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 interface Configuracion {
   id: number
   clave: string
@@ -89,7 +91,11 @@ const guardar = async (clave: string, valor: string) => {
   }
 }
 
-onMounted(cargar)
+onMounted(async () => {
+  loadingStore.mostrar('Cargando configuración...')
+  await cargar()
+  loadingStore.ocultar()
+})
 </script>
 
 <style scoped>

@@ -77,9 +77,7 @@
                 <v-icon color="primary">mdi-greenhouse</v-icon>
                 <span class="text-body-1 font-weight-bold">{{ zona.nombre }}</span>
                 <v-chip size="x-small" color="success" variant="tonal">
-                  {{
-                    zona.invernaderos?.filter((i) => i.estado === 'abierto').length ?? 0
-                  }}
+                  {{ zona.invernaderos?.filter((i) => i.estado === 'abierto').length ?? 0 }}
                   abiertos
                 </v-chip>
               </div>
@@ -165,7 +163,9 @@ import { useDisplay } from 'vuetify'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import api from '../api/axios'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 const store = useInvernaderosStore()
 const { zonas } = storeToRefs(store)
 const { mobile } = useDisplay()
@@ -220,7 +220,9 @@ const cargarTodo = async () => {
 }
 
 onMounted(async () => {
+  loadingStore.mostrar('Cargando invernaderos...')
   await cargarTodo()
+  loadingStore.ocultar()
   intervalo = setInterval(cargarTodo, 30000)
 })
 

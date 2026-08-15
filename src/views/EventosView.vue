@@ -166,7 +166,9 @@ import { storeToRefs } from 'pinia'
 import api from '../api/axios'
 import { useExportar } from '../composables/useExportar'
 import ModalExportar from '../components/shared/ModalExportar.vue'
+import { useLoadingStore } from '../stores/loading'
 
+const loadingStore = useLoadingStore()
 const modalExportar = ref(false)
 const invernaderosStore = useInvernaderosStore()
 const { zonas } = storeToRefs(invernaderosStore)
@@ -252,7 +254,9 @@ const cargar = async () => {
 const filtrarLocal = () => {}
 
 onMounted(async () => {
+  loadingStore.mostrar('Cargando historial...')
   await invernaderosStore.cargarZonas()
   await cargar()
+  loadingStore.ocultar()
 })
 </script>

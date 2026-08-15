@@ -180,6 +180,8 @@
     <v-main>
       <RouterView />
     </v-main>
+
+    <LoadingApp :visible="loadingStore.visible" :mensaje="loadingStore.mensaje" />
   </v-app>
 </template>
 
@@ -190,8 +192,11 @@ import { useDisplay, useTheme } from 'vuetify'
 import { useAuthStore } from './stores/auth'
 import { useNotificacionesStore } from './stores/notificaciones'
 import { useTemaStore } from './stores/tema'
+import LoadingApp from './components/shared/LoadingApp.vue'
+import { useLoadingStore } from './stores/loading'
 import api from './api/axios'
 
+const loadingStore = useLoadingStore()
 const authStore = useAuthStore()
 const notifStore = useNotificacionesStore()
 const temaStore = useTemaStore()
