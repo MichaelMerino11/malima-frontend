@@ -234,6 +234,17 @@
             </v-card-text>
           </v-card>
 
+          <v-btn
+            variant="tonal"
+            color="primary"
+            size="small"
+            prepend-icon="mdi-export"
+            block
+            @click="modalExportar = true"
+          >
+            Exportar
+          </v-btn>
+
           <!-- Resumen de condiciones -->
           <v-card rounded="lg" elevation="2">
             <v-card-title class="d-flex align-center gap-2 pa-4">
@@ -305,6 +316,7 @@
         </v-col>
       </v-row>
     </template>
+    <ModalExportar v-model="modalExportar" tipo="meteorologia" :datos="historial" />
   </v-container>
 </template>
 
@@ -316,6 +328,11 @@ import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import GraficoMeteo from '../components/meteorologia/GraficoMeteo.vue'
 import api from '../api/axios'
+import { useExportar } from '../composables/useExportar'
+import ModalExportar from '../components/meteorologia/../shared/ModalExportar.vue'
+
+const modalExportar = ref(false)
+const { exportarExcel, exportarPDF } = useExportar()
 
 const store = useMeteorologiaStore()
 const invernaderosStore = useInvernaderosStore()
@@ -402,7 +419,40 @@ const formatFecha = (fecha: string) => {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   })
+}
+
+const exportarMeteoExcel = () => {
+  const datos = historial.value.map((d: any) => ({
+    Fecha: formatFecha(d.registrado_at),
+    'Temperatura (°C)': d.temperatura,
+    'Humedad (%)': d.humedad,
+    'Viento (km/h)': d.velocidad_viento,
+    'Radiación solar (W/m²)': d.radiacion_solar,
+    'Prob. lluvia (%)': d.probabilidad_lluvia ?? 0,
+  }))
+  exportarExcel(datos, 'meteorologia-malima', 'Meteorología')
+}
+
+const exportarMeteoPDF = () => {
+  const headers = [
+    'Fecha',
+    'Temp. (°C)',
+    'Humedad (%)',
+    'Viento (km/h)',
+    'Radiación (W/m²)',
+    'Lluvia (%)',
+  ]
+  const rows = historial.value.map((d: any) => [
+    formatFecha(d.registrado_at),
+    d.temperatura,
+    d.humedad,
+    d.velocidad_viento,
+    d.radiacion_solar,
+    d.probabilidad_lluvia ?? 0,
+  ])
+  exportarPDF('Datos Meteorológicos', headers, rows, 'meteorologia-malima')
 }
 
 onMounted(async () => {

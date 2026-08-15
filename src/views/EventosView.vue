@@ -84,14 +84,13 @@
               <span class="text-body-1 font-weight-bold">Eventos recientes</span>
             </div>
             <v-btn
-              variant="text"
-              size="small"
-              prepend-icon="mdi-refresh"
+              variant="tonal"
               color="primary"
-              :loading="cargando"
-              @click="cargar"
+              size="small"
+              prepend-icon="mdi-export"
+              @click="modalExportar = true"
             >
-              Actualizar
+              Exportar
             </v-btn>
           </v-card-title>
           <v-divider />
@@ -156,6 +155,7 @@
         </v-card>
       </v-col>
     </v-row>
+    <ModalExportar v-model="modalExportar" tipo="eventos" :datos="eventosFiltrados" />
   </v-container>
 </template>
 
@@ -164,7 +164,10 @@ import { computed, onMounted, ref, reactive } from 'vue'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import api from '../api/axios'
+import { useExportar } from '../composables/useExportar'
+import ModalExportar from '../components/shared/ModalExportar.vue'
 
+const modalExportar = ref(false)
 const invernaderosStore = useInvernaderosStore()
 const { zonas } = storeToRefs(invernaderosStore)
 
@@ -185,6 +188,7 @@ const eventosFiltrados = computed(() => {
     fecha: formatFecha(e.created_at),
   }))
 })
+const { exportarExcel, exportarPDF } = useExportar()
 
 const headers = [
   { title: 'Fecha', key: 'fecha', width: '160px' },
@@ -245,7 +249,7 @@ const cargar = async () => {
   }
 }
 
-const filtrarLocal = () => {} // el filtro de resultado es local
+const filtrarLocal = () => {}
 
 onMounted(async () => {
   await invernaderosStore.cargarZonas()
