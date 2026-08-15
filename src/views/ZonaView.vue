@@ -85,7 +85,7 @@
               :size="mobile ? 'small' : 'default'"
               prepend-icon="mdi-arrow-up-circle"
               :disabled="inv.modo === 'local'"
-              @click="enviarComando(inv.id, 'abrir')"
+              @click="enviarComando(inv.id, 'abrir', inv.nombre)"
               style="flex: 1"
             >
               Abrir
@@ -96,7 +96,7 @@
               :size="mobile ? 'small' : 'default'"
               prepend-icon="mdi-arrow-down-circle"
               :disabled="inv.modo === 'local'"
-              @click="enviarComando(inv.id, 'cerrar')"
+              @click="enviarComando(inv.id, 'cerrar', inv.nombre)"
               style="flex: 1"
             >
               Cerrar
@@ -107,7 +107,7 @@
               :size="mobile ? 'small' : 'default'"
               icon="mdi-stop-circle"
               :disabled="inv.modo === 'local'"
-              @click="enviarComando(inv.id, 'detener')"
+              @click="enviarComando(inv.id, 'detener', inv.nombre)"
             />
           </v-card-actions>
         </v-card>
@@ -118,6 +118,12 @@
       {{ snackbar.mensaje }}
     </v-snackbar>
   </v-container>
+  <ModalConfirmar
+    v-model="modalConfirmar.visible"
+    :accion="modalConfirmar.accion"
+    :nombre="modalConfirmar.nombre"
+    @confirmar="ejecutarAccion"
+  />
 </template>
 
 <script setup lang="ts">
@@ -127,6 +133,7 @@ import { useDisplay } from 'vuetify'
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { storeToRefs } from 'pinia'
 import { useLoadingStore } from '../stores/loading'
+import ModalConfirmar from '../components/shared/ModalConfirmar.vue'
 
 const loadingStore = useLoadingStore()
 const route = useRoute()
@@ -154,14 +161,42 @@ const colorEstado = (estado: string) => {
   return 'error'
 }
 
-const enviarComando = async (invernadero_id: number, accion: 'abrir' | 'cerrar' | 'detener') => {
-  const res = await store.enviarComando(invernadero_id, accion)
-  if (res.ok) {
-    mostrarSnackbar(`Comando '${accion}' enviado correctamente`)
+const enviarComando = (
+  invernadero_id: number,
+  accion: 'abrir' | 'cerrar' | 'detener',
+  nombre: string,
+) => {
+  pedirConfirmacion(accion, nombre, async () => {
+    const res = await store.enviarComando(invernadero_id, accion)
+    if (res.ok) {
+      mostrarSnackbar(`Comando '${accion}' enviado correctamente`)
+      await store.cargarEstadoZona(zona_id.value)
+    } else {
+      mostrarSnackbar(res.mensaje ?? 'Error enviando comando', 'error')
+    }
+  })
+}
+
+const abrirTodo = () => {
+  pedirConfirmacion('zona-abrir', zonaActual.value?.nombre ?? 'esta zona', async () => {
+    const res = await store.enviarComandoZona(zona_id.value, 'abrir')
+    mostrarSnackbar(
+      res.ok ? 'Abriendo todos los invernaderos' : 'Error',
+      res.ok ? 'success' : 'error',
+    )
     await store.cargarEstadoZona(zona_id.value)
-  } else {
-    mostrarSnackbar(res.mensaje ?? 'Error enviando comando', 'error')
-  }
+  })
+}
+
+const cerrarTodo = () => {
+  pedirConfirmacion('zona-cerrar', zonaActual.value?.nombre ?? 'esta zona', async () => {
+    const res = await store.enviarComandoZona(zona_id.value, 'cerrar')
+    mostrarSnackbar(
+      res.ok ? 'Cerrando todos los invernaderos' : 'Error',
+      res.ok ? 'success' : 'error',
+    )
+    await store.cargarEstadoZona(zona_id.value)
+  })
 }
 
 const cambiarModo = async (invernadero_id: number, modo: 'local' | 'remoto' | 'automatico') => {
@@ -174,22 +209,26 @@ const cambiarModo = async (invernadero_id: number, modo: 'local' | 'remoto' | 'a
   }
 }
 
-const abrirTodo = async () => {
-  const res = await store.enviarComandoZona(zona_id.value, 'abrir')
-  mostrarSnackbar(
-    res.ok ? 'Abriendo todos los invernaderos' : 'Error',
-    res.ok ? 'success' : 'error',
-  )
-  await store.cargarEstadoZona(zona_id.value)
+const modalConfirmar = reactive({
+  visible: false,
+  accion: 'abrir' as 'abrir' | 'cerrar' | 'detener' | 'zona-abrir' | 'zona-cerrar',
+  nombre: '',
+  callback: null as (() => Promise<void>) | null,
+})
+
+const pedirConfirmacion = (
+  accion: typeof modalConfirmar.accion,
+  nombre: string,
+  callback: () => Promise<void>,
+) => {
+  modalConfirmar.accion = accion
+  modalConfirmar.nombre = nombre
+  modalConfirmar.callback = callback
+  modalConfirmar.visible = true
 }
 
-const cerrarTodo = async () => {
-  const res = await store.enviarComandoZona(zona_id.value, 'cerrar')
-  mostrarSnackbar(
-    res.ok ? 'Cerrando todos los invernaderos' : 'Error',
-    res.ok ? 'success' : 'error',
-  )
-  await store.cargarEstadoZona(zona_id.value)
+const ejecutarAccion = async () => {
+  if (modalConfirmar.callback) await modalConfirmar.callback()
 }
 
 onMounted(async () => {
