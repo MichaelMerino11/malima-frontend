@@ -61,6 +61,7 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
+      meta: { transition: 'page-turn' },
     },
     {
       path: '/:pathMatch(.*)*',

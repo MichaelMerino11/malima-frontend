@@ -93,3 +93,52 @@
     transform: translateX(0);
   }
 }
+
+/* Efecto vuelta de página — login a home */
+.page-turn-enter-active {
+  animation: pageTurn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform-origin: left center;
+}
+
+.page-turn-leave-active {
+  animation: pageLeave 0.4s ease-in forwards;
+}
+
+@keyframes pageTurn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-25deg) translateX(60px);
+    filter: brightness(0.8);
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0);
+    filter: brightness(1);
+  }
+}
+
+@keyframes pageLeave {
+  0% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(15deg) translateX(-40px);
+  }
+}
+
+/* Transición por defecto para otras rutas */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

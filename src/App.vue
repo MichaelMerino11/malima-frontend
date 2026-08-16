@@ -109,13 +109,47 @@
           to="/perfil"
           @click="mobile && (drawerOpen = false)"
         />
+        <!-- En el template, reemplaza el list-item de cerrar sesión -->
         <v-list-item
           prepend-icon="mdi-logout"
           title="Cerrar sesión"
           :subtitle="hovered && !mobile ? authStore.usuario?.nombre : undefined"
           class="py-3"
-          @click="logout"
+          @click="confirmarLogout = true"
         />
+
+        <!-- Modal de confirmación — agrégalo antes del cierre </v-app> -->
+        <v-dialog v-model="confirmarLogout" max-width="360" persistent>
+          <v-card rounded="lg">
+            <div
+              style="
+                background: linear-gradient(135deg, #c62828, #ef5350);
+                border-radius: 12px 12px 0 0;
+              "
+              class="pa-6 text-center"
+            >
+              <v-icon size="48" color="white">mdi-logout</v-icon>
+              <h2 class="text-h6 font-weight-bold text-white mt-2">Cerrar sesión</h2>
+            </div>
+            <v-card-text class="pa-6 text-center">
+              <p class="text-body-2">¿Estás seguro que deseas cerrar sesión?</p>
+            </v-card-text>
+            <v-divider />
+            <v-card-actions class="pa-4 d-flex gap-2">
+              <v-btn
+                variant="outlined"
+                color="grey"
+                style="flex: 1"
+                @click="confirmarLogout = false"
+              >
+                Cancelar
+              </v-btn>
+              <v-btn color="error" variant="elevated" style="flex: 1" @click="logout">
+                Cerrar sesión
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
       </template>
     </v-navigation-drawer>
 
@@ -178,7 +212,11 @@
     </v-navigation-drawer>
 
     <v-main>
-      <RouterView />
+      <router-view v-slot="{ Component, route }">
+        <transition :name="(route.meta.transition as string) || 'fade'" mode="out-in">
+          <component :is="Component" :key="route.path" />
+        </transition>
+      </router-view>
     </v-main>
 
     <LoadingApp :visible="loadingStore.visible" :mensaje="loadingStore.mensaje" />
@@ -209,6 +247,7 @@ const { conectar } = useSocket()
 const hovered = ref(false)
 const drawerOpen = ref(!mobile.value)
 const panelNotif = ref(false)
+const confirmarLogout = ref(false)
 
 let intervaloNotif: ReturnType<typeof setInterval>
 
@@ -255,6 +294,7 @@ watch(mobile, (isMobile) => {
 })
 
 const logout = () => {
+  confirmarLogout.value = false
   authStore.logout()
   router.push('/login')
 }
