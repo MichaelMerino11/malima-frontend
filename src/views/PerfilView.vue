@@ -1,106 +1,219 @@
 <template>
-  <v-container fluid class="pa-4" style="max-width: 1200px">
-    <v-row class="mb-2">
-      <v-col>
-        <h1 class="text-h5 font-weight-bold text-primary">Mi perfil</h1>
-        <p class="text-body-2 text-medium-emphasis">Actualiza tu información personal</p>
-      </v-col>
-    </v-row>
+  <v-container fluid class="profile-page pa-4 pa-md-6">
+    <div class="page-header mb-6">
+      <div class="page-header__main">
+        <div class="page-header__icon">
+          <v-icon size="26"> mdi-account-circle-outline </v-icon>
+        </div>
+
+        <div>
+          <div class="d-flex align-center flex-wrap ga-2">
+            <h1 class="page-title">Mi perfil</h1>
+
+            <v-chip
+              v-if="perfilModificado"
+              color="warning"
+              variant="tonal"
+              size="small"
+              class="pending-chip"
+            >
+              <v-icon start size="15"> mdi-content-save-alert-outline </v-icon>
+
+              Cambios sin guardar
+            </v-chip>
+          </div>
+
+          <p class="page-subtitle">
+            Administra tu información personal, fotografía y seguridad de la cuenta
+          </p>
+        </div>
+      </div>
+    </div>
 
     <v-row>
-      <!-- Columna Izquierda: Foto de Perfil -->
-      <!-- Columna Izquierda: Foto de Perfil -->
-      <v-col cols="12" md="4" lg="3">
-        <v-card rounded="lg" elevation="2" class="text-center overflow-hidden">
-          <!-- Fondo degradado superior -->
-          <div class="perfil-banner" />
+      <v-col cols="12" lg="4" xl="3">
+        <v-card rounded="xl" elevation="0" class="identity-card">
+          <div class="profile-banner">
+            <div class="profile-banner__decoration profile-banner__decoration--one" />
+            <div class="profile-banner__decoration profile-banner__decoration--two" />
+          </div>
 
-          <!-- Avatar centrado sobre el banner -->
-          <div class="perfil-avatar-wrap">
-            <div class="avatar-container" @click="triggerFileInput">
-              <v-avatar size="90" color="primary" class="avatar-ring">
-                <img
-                  v-if="avatarUrl"
-                  :src="avatarUrl"
-                  style="object-fit: cover; width: 100%; height: 100%"
-                />
-                <span v-else class="text-h4 text-white font-weight-bold">{{ iniciales }}</span>
+          <div class="avatar-wrapper">
+            <div
+              class="avatar-container"
+              :class="{
+                'avatar-container--loading': subiendoAvatar,
+              }"
+              @click="triggerFileInput"
+            >
+              <v-avatar size="106" color="primary" class="profile-avatar">
+                <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" class="avatar-image" />
+
+                <span v-else class="avatar-initials">
+                  {{ iniciales }}
+                </span>
               </v-avatar>
+
               <div class="avatar-overlay">
-                <v-icon color="white" size="22">mdi-camera</v-icon>
+                <v-icon v-if="!subiendoAvatar" color="white" size="24"> mdi-camera-outline </v-icon>
+
+                <v-progress-circular v-else indeterminate color="white" size="28" width="3" />
               </div>
+
+              <div class="camera-badge">
+                <v-icon size="15" color="white"> mdi-camera </v-icon>
+              </div>
+
               <input
                 ref="fileInput"
                 type="file"
-                accept="image/*"
-                style="display: none"
+                accept="image/png,image/jpeg,image/webp"
+                class="d-none"
                 @change="subirAvatar"
               />
             </div>
           </div>
 
-          <!-- Info -->
-          <div class="px-4 pb-4 pt-2">
-            <h2 class="text-subtitle-1 font-weight-bold mb-0">{{ perfil.nombre || 'Usuario' }}</h2>
-            <v-chip size="x-small" color="primary" variant="tonal" class="mt-1 mb-2">
-              {{ authStore.usuario?.rol }}
+          <div class="identity-content">
+            <h2>
+              {{ perfil.nombre || 'Usuario' }}
+            </h2>
+
+            <v-chip color="primary" variant="tonal" size="small" class="role-chip">
+              <v-icon start size="14">
+                {{ iconoRol }}
+              </v-icon>
+
+              {{ rolUsuario }}
             </v-chip>
-            <p class="text-caption text-medium-emphasis">{{ perfil.email }}</p>
 
-            <v-divider class="my-3" />
+            <div class="profile-email">
+              <v-icon size="16"> mdi-email-outline </v-icon>
 
-            <div class="d-flex align-center justify-center gap-1 text-caption text-medium-emphasis">
-              <span>Clic en la foto para cambiarla</span>
+              <span>
+                {{ perfil.email || 'Sin correo registrado' }}
+              </span>
             </div>
-            <p class="text-caption text-medium-emphasis mt-1"><strong>Máximo 2MB</strong></p>
 
-            <v-progress-linear
-              v-if="subiendoAvatar"
-              indeterminate
+            <v-divider class="my-5" />
+
+            <div class="avatar-help">
+              <div class="avatar-help__icon">
+                <v-icon size="18"> mdi-image-outline </v-icon>
+              </div>
+
+              <div>
+                <strong> Foto de perfil </strong>
+
+                <span> JPG, PNG o WebP. Máximo 2 MB. </span>
+              </div>
+            </div>
+
+            <v-btn
+              variant="tonal"
               color="primary"
-              rounded
-              height="3"
-              class="mt-3"
-            />
+              rounded="lg"
+              block
+              prepend-icon="mdi-camera-outline"
+              :loading="subiendoAvatar"
+              class="mt-4"
+              @click="triggerFileInput"
+            >
+              Cambiar fotografía
+            </v-btn>
           </div>
         </v-card>
       </v-col>
 
-      <!-- Columna Derecha: Formularios -->
-      <v-col cols="12" md="8" lg="9">
+      <v-col cols="12" lg="8" xl="9">
         <v-row>
-          <!-- Datos personales -->
-          <v-col cols="12" md="6">
-            <v-card rounded="lg" elevation="2" class="h-100 d-flex flex-column">
-              <v-card-title class="d-flex align-center gap-2 pa-4">
-                <v-icon color="primary" class="mr-2">mdi-account</v-icon>
-                <span class="text-body-1 font-weight-bold">Datos personales</span>
-              </v-card-title>
+          <v-col cols="12" xl="6">
+            <v-card rounded="xl" elevation="0" class="profile-card h-100">
+              <div class="card-header">
+                <div class="card-header__main">
+                  <div class="card-header__icon">
+                    <v-icon size="21"> mdi-account-edit-outline </v-icon>
+                  </div>
+
+                  <div>
+                    <h2>Datos personales</h2>
+
+                    <p>Información utilizada para identificar tu cuenta</p>
+                  </div>
+                </div>
+
+                <v-chip v-if="perfilModificado" color="warning" variant="tonal" size="small">
+                  Modificado
+                </v-chip>
+              </div>
+
               <v-divider />
-              <v-card-text class="pa-4 flex-grow-1">
+
+              <v-card-text class="card-content">
+                <div class="form-section-title">
+                  <span> Información de la cuenta </span>
+                </div>
+
                 <v-text-field
                   v-model="perfil.nombre"
                   label="Nombre"
+                  placeholder="Nombre completo"
                   variant="outlined"
                   density="comfortable"
+                  rounded="lg"
                   prepend-inner-icon="mdi-account-outline"
-                  class="mb-3"
+                  :error-messages="errorNombre"
+                  hide-details="auto"
+                  class="profile-field mb-5"
                 />
+
                 <v-text-field
                   v-model="perfil.email"
                   label="Correo electrónico"
+                  placeholder="usuario@empresa.com"
                   type="email"
                   variant="outlined"
                   density="comfortable"
+                  rounded="lg"
                   prepend-inner-icon="mdi-email-outline"
+                  :error-messages="errorEmail"
+                  hide-details="auto"
+                  class="profile-field"
                 />
+
+                <div class="account-info">
+                  <div class="account-info__icon">
+                    <v-icon size="18"> mdi-shield-account-outline </v-icon>
+                  </div>
+
+                  <div>
+                    <span> Rol asignado </span>
+
+                    <strong>
+                      {{ rolUsuario }}
+                    </strong>
+                  </div>
+
+                  <v-chip color="success" variant="tonal" size="x-small"> Activo </v-chip>
+                </div>
               </v-card-text>
-              <v-card-actions class="pa-4 pt-0 mt-auto">
+
+              <v-divider />
+
+              <v-card-actions class="card-actions">
+                <v-btn v-if="perfilModificado" variant="text" rounded="lg" @click="restaurarPerfil">
+                  Descartar
+                </v-btn>
+
                 <v-spacer />
+
                 <v-btn
                   color="primary"
                   variant="tonal"
+                  rounded="lg"
+                  prepend-icon="mdi-content-save-outline"
                   :loading="guardandoPerfil"
+                  :disabled="!perfilModificado || !perfilValido"
                   @click="guardarPerfil"
                 >
                   Guardar cambios
@@ -109,55 +222,152 @@
             </v-card>
           </v-col>
 
-          <!-- Cambiar contraseña -->
-          <v-col cols="12" md="6">
-            <v-card rounded="lg" elevation="2" class="h-100 d-flex flex-column">
-              <v-card-title class="d-flex align-center gap-2 pa-4">
-                <v-icon color="primary" class="mr-2">mdi-lock</v-icon>
-                <span class="text-body-1 font-weight-bold">Cambiar contraseña</span>
-              </v-card-title>
+          <v-col cols="12" xl="6">
+            <v-card rounded="xl" elevation="0" class="profile-card h-100">
+              <div class="card-header">
+                <div class="card-header__main">
+                  <div class="card-header__icon card-header__icon--security">
+                    <v-icon size="21"> mdi-lock-outline </v-icon>
+                  </div>
+
+                  <div>
+                    <h2>Seguridad</h2>
+
+                    <p>Actualiza la contraseña utilizada para iniciar sesión</p>
+                  </div>
+                </div>
+              </div>
+
               <v-divider />
-              <v-card-text class="pa-4 flex-grow-1">
+
+              <v-card-text class="card-content">
+                <div class="security-notice">
+                  <div class="security-notice__icon">
+                    <v-icon size="18"> mdi-shield-lock-outline </v-icon>
+                  </div>
+
+                  <div>
+                    <strong> Protege tu cuenta </strong>
+
+                    <span>
+                      Utiliza una contraseña diferente a las que usas en otros servicios.
+                    </span>
+                  </div>
+                </div>
+
                 <v-text-field
                   v-model="passwords.actual"
                   label="Contraseña actual"
                   :type="mostrar.actual ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
+                  rounded="lg"
                   prepend-inner-icon="mdi-lock-outline"
-                  :append-inner-icon="mostrar.actual ? 'mdi-eye-off' : 'mdi-eye'"
-                  class="mb-3"
+                  :append-inner-icon="mostrar.actual ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+                  hide-details="auto"
+                  class="profile-field mb-4"
                   @click:append-inner="mostrar.actual = !mostrar.actual"
                 />
+
                 <v-text-field
                   v-model="passwords.nuevo"
                   label="Nueva contraseña"
                   :type="mostrar.nuevo ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
-                  prepend-inner-icon="mdi-lock-outline"
-                  :append-inner-icon="mostrar.nuevo ? 'mdi-eye-off' : 'mdi-eye'"
-                  class="mb-3"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-lock-plus-outline"
+                  :append-inner-icon="mostrar.nuevo ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+                  :error-messages="errorPasswordNuevo"
+                  hide-details="auto"
+                  class="profile-field mb-3"
                   @click:append-inner="mostrar.nuevo = !mostrar.nuevo"
                 />
+
+                <div v-if="passwords.nuevo" class="password-strength mb-4">
+                  <div class="password-strength__header">
+                    <span> Seguridad de la contraseña </span>
+
+                    <strong :class="`text-${fortalezaPassword.color}`">
+                      {{ fortalezaPassword.label }}
+                    </strong>
+                  </div>
+
+                  <v-progress-linear
+                    :model-value="fortalezaPassword.valor"
+                    :color="fortalezaPassword.color"
+                    rounded
+                    height="5"
+                  />
+                </div>
+
                 <v-text-field
                   v-model="passwords.confirmar"
                   label="Confirmar nueva contraseña"
                   :type="mostrar.confirmar ? 'text' : 'password'"
                   variant="outlined"
                   density="comfortable"
-                  prepend-inner-icon="mdi-lock-outline"
-                  :append-inner-icon="mostrar.confirmar ? 'mdi-eye-off' : 'mdi-eye'"
+                  rounded="lg"
+                  prepend-inner-icon="mdi-lock-check-outline"
+                  :append-inner-icon="mostrar.confirmar ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
                   :error-messages="errorConfirmar"
+                  hide-details="auto"
+                  class="profile-field"
                   @click:append-inner="mostrar.confirmar = !mostrar.confirmar"
+                  @keydown.enter="cambiarPassword"
                 />
+
+                <div class="password-requirements">
+                  <div
+                    :class="{
+                      'password-requirement--valid': passwords.nuevo.length >= 8,
+                    }"
+                  >
+                    <v-icon size="15">
+                      {{ passwords.nuevo.length >= 8 ? 'mdi-check-circle' : 'mdi-circle-small' }}
+                    </v-icon>
+
+                    <span> Mínimo 8 caracteres </span>
+                  </div>
+
+                  <div
+                    :class="{
+                      'password-requirement--valid': tieneNumero,
+                    }"
+                  >
+                    <v-icon size="15">
+                      {{ tieneNumero ? 'mdi-check-circle' : 'mdi-circle-small' }}
+                    </v-icon>
+
+                    <span> Al menos un número </span>
+                  </div>
+
+                  <div
+                    :class="{
+                      'password-requirement--valid': passwordsCoinciden,
+                    }"
+                  >
+                    <v-icon size="15">
+                      {{ passwordsCoinciden ? 'mdi-check-circle' : 'mdi-circle-small' }}
+                    </v-icon>
+
+                    <span> Las contraseñas coinciden </span>
+                  </div>
+                </div>
               </v-card-text>
-              <v-card-actions class="pa-4 pt-0 mt-auto">
+
+              <v-divider />
+
+              <v-card-actions class="card-actions">
                 <v-spacer />
+
                 <v-btn
                   color="primary"
                   variant="tonal"
+                  rounded="lg"
+                  prepend-icon="mdi-lock-reset"
                   :loading="guardandoPassword"
+                  :disabled="!passwordValido"
                   @click="cambiarPassword"
                 >
                   Cambiar contraseña
@@ -169,14 +379,35 @@
       </v-col>
     </v-row>
 
-    <v-snackbar v-model="snackbar.visible" :color="snackbar.color" timeout="3000">
-      {{ snackbar.mensaje }}
+    <v-snackbar
+      v-model="snackbar.visible"
+      :color="snackbar.color"
+      timeout="3000"
+      location="bottom right"
+      rounded="lg"
+    >
+      <div class="snackbar-content">
+        <v-icon size="20">
+          {{ snackbar.color === 'error' ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline' }}
+        </v-icon>
+
+        <span>
+          {{ snackbar.mensaje }}
+        </span>
+      </div>
+
+      <template #actions>
+        <v-btn icon size="small" variant="text" @click="snackbar.visible = false">
+          <v-icon size="17"> mdi-close </v-icon>
+        </v-btn>
+      </template>
     </v-snackbar>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+
 import { useAuthStore } from '../stores/auth'
 import { useLoadingStore } from '../stores/loading'
 import { supabase } from '../lib/supabase'
@@ -185,34 +416,210 @@ import api from '../api/axios'
 const authStore = useAuthStore()
 const loadingStore = useLoadingStore()
 
-const perfil = reactive({ nombre: '', email: '' })
-const passwords = reactive({ actual: '', nuevo: '', confirmar: '' })
-const mostrar = reactive({ actual: false, nuevo: false, confirmar: false })
+const perfil = reactive({
+  nombre: '',
+  email: '',
+})
+
+const perfilOriginal = reactive({
+  nombre: '',
+  email: '',
+})
+
+const passwords = reactive({
+  actual: '',
+  nuevo: '',
+  confirmar: '',
+})
+
+const mostrar = reactive({
+  actual: false,
+  nuevo: false,
+  confirmar: false,
+})
 
 const guardandoPerfil = ref(false)
 const guardandoPassword = ref(false)
 const subiendoAvatar = ref(false)
 
 const avatarUrl = ref<string | null>(null)
+
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const snackbar = reactive({ visible: false, mensaje: '', color: 'success' })
+const snackbar = reactive({
+  visible: false,
+  mensaje: '',
+  color: 'success',
+})
 
 const iniciales = computed(() => {
-  const nombre = authStore.usuario?.nombre ?? ''
+  const nombre = perfil.nombre || authStore.usuario?.nombre || ''
+
+  if (!nombre.trim()) {
+    return 'U'
+  }
+
   return nombre
-    .split(' ')
-    .map((n) => n[0])
+    .trim()
+    .split(/\s+/)
+    .map((parte) => parte[0])
     .join('')
     .substring(0, 2)
     .toUpperCase()
 })
 
-const errorConfirmar = computed(() =>
-  passwords.confirmar && passwords.nuevo !== passwords.confirmar
-    ? 'Las contraseñas no coinciden'
-    : '',
-)
+const rolUsuario = computed(() => {
+  const rol = authStore.usuario?.rol ?? 'usuario'
+
+  if (rol === 'admin') {
+    return 'Administrador'
+  }
+
+  if (rol === 'operador') {
+    return 'Operador'
+  }
+
+  if (rol === 'supervisor') {
+    return 'Supervisor'
+  }
+
+  return rol
+})
+
+const iconoRol = computed(() => {
+  const rol = authStore.usuario?.rol
+
+  if (rol === 'admin') {
+    return 'mdi-shield-crown-outline'
+  }
+
+  if (rol === 'operador') {
+    return 'mdi-account-cog-outline'
+  }
+
+  if (rol === 'supervisor') {
+    return 'mdi-account-eye-outline'
+  }
+
+  return 'mdi-account-outline'
+})
+
+const perfilModificado = computed(() => {
+  return (
+    perfil.nombre.trim() !== perfilOriginal.nombre || perfil.email.trim() !== perfilOriginal.email
+  )
+})
+
+const errorNombre = computed(() => {
+  if (!perfil.nombre.trim()) {
+    return 'El nombre es obligatorio'
+  }
+
+  if (perfil.nombre.trim().length < 2) {
+    return 'Ingresa un nombre válido'
+  }
+
+  return ''
+})
+
+const errorEmail = computed(() => {
+  if (!perfil.email.trim()) {
+    return 'El correo es obligatorio'
+  }
+
+  const valido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(perfil.email.trim())
+
+  return valido ? '' : 'Ingresa un correo electrónico válido'
+})
+
+const perfilValido = computed(() => {
+  return !errorNombre.value && !errorEmail.value
+})
+
+const tieneNumero = computed(() => {
+  return /\d/.test(passwords.nuevo)
+})
+
+const passwordsCoinciden = computed(() => {
+  return Boolean(passwords.nuevo && passwords.confirmar && passwords.nuevo === passwords.confirmar)
+})
+
+const errorPasswordNuevo = computed(() => {
+  if (!passwords.nuevo) {
+    return ''
+  }
+
+  if (passwords.nuevo.length < 8) {
+    return 'La contraseña debe tener al menos 8 caracteres'
+  }
+
+  return ''
+})
+
+const errorConfirmar = computed(() => {
+  if (!passwords.confirmar) {
+    return ''
+  }
+
+  return passwords.nuevo !== passwords.confirmar ? 'Las contraseñas no coinciden' : ''
+})
+
+const passwordValido = computed(() => {
+  return Boolean(
+    passwords.actual &&
+    passwords.nuevo.length >= 8 &&
+    tieneNumero.value &&
+    passwordsCoinciden.value,
+  )
+})
+
+const fortalezaPassword = computed(() => {
+  const password = passwords.nuevo
+
+  let puntuacion = 0
+
+  if (password.length >= 8) {
+    puntuacion++
+  }
+
+  if (password.length >= 12) {
+    puntuacion++
+  }
+
+  if (/[A-Z]/.test(password)) {
+    puntuacion++
+  }
+
+  if (/\d/.test(password)) {
+    puntuacion++
+  }
+
+  if (/[^A-Za-z0-9]/.test(password)) {
+    puntuacion++
+  }
+
+  if (puntuacion <= 1) {
+    return {
+      valor: 25,
+      label: 'Débil',
+      color: 'error',
+    }
+  }
+
+  if (puntuacion <= 3) {
+    return {
+      valor: 60,
+      label: 'Media',
+      color: 'warning',
+    }
+  }
+
+  return {
+    valor: 100,
+    label: 'Fuerte',
+    color: 'success',
+  }
+})
 
 const mostrarSnackbar = (mensaje: string, color = 'success') => {
   snackbar.mensaje = mensaje
@@ -220,55 +627,120 @@ const mostrarSnackbar = (mensaje: string, color = 'success') => {
   snackbar.visible = true
 }
 
-const triggerFileInput = () => fileInput.value?.click()
+const triggerFileInput = () => {
+  if (!subiendoAvatar.value) {
+    fileInput.value?.click()
+  }
+}
 
 const subirAvatar = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
+  const input = event.target as HTMLInputElement
+
+  const file = input.files?.[0]
+
+  if (!file) {
+    return
+  }
+
+  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp']
+
+  if (!tiposPermitidos.includes(file.type)) {
+    mostrarSnackbar('Formato no permitido. Usa JPG, PNG o WebP', 'error')
+
+    input.value = ''
+    return
+  }
 
   if (file.size > 2 * 1024 * 1024) {
-    mostrarSnackbar('La imagen no puede superar 2MB', 'error')
+    mostrarSnackbar('La imagen no puede superar 2 MB', 'error')
+
+    input.value = ''
     return
   }
 
   subiendoAvatar.value = true
+
   try {
     const userId = authStore.usuario?.id
-    const ext = file.name.split('.').pop()
-    const path = `${userId}/avatar.${ext}`
 
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-    if (error) throw error
+    if (!userId) {
+      throw new Error('Usuario no identificado')
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+
+    const path = `${userId}/avatar.${extension}`
+
+    const { error } = await supabase.storage.from('avatars').upload(path, file, {
+      upsert: true,
+    })
+
+    if (error) {
+      throw error
+    }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+
     const url = `${data.publicUrl}?t=${Date.now()}`
 
-    await api.patch('/usuarios/perfil', { avatar_url: url })
+    const respuesta = await api.patch('/usuarios/perfil', {
+      avatar_url: url,
+    })
+
+    if (!respuesta.data.ok) {
+      throw new Error(respuesta.data.mensaje || 'No fue posible actualizar el avatar')
+    }
+
     avatarUrl.value = url
 
     mostrarSnackbar('Foto actualizada correctamente')
-  } catch {
+  } catch (error) {
+    console.error('Error subiendo avatar:', error)
+
     mostrarSnackbar('Error subiendo la imagen', 'error')
   } finally {
     subiendoAvatar.value = false
+    input.value = ''
   }
 }
 
+const restaurarPerfil = () => {
+  perfil.nombre = perfilOriginal.nombre
+
+  perfil.email = perfilOriginal.email
+}
+
 const guardarPerfil = async () => {
+  if (guardandoPerfil.value || !perfilValido.value || !perfilModificado.value) {
+    return
+  }
+
   guardandoPerfil.value = true
+
   try {
     const { data } = await api.patch('/usuarios/perfil', {
-      nombre: perfil.nombre,
-      email: perfil.email,
+      nombre: perfil.nombre.trim(),
+      email: perfil.email.trim(),
     })
 
     if (data.ok) {
-      mostrarSnackbar('Perfil actualizado correctamente')
       await authStore.cargarUsuario()
+
+      perfil.nombre = authStore.usuario?.nombre ?? perfil.nombre.trim()
+
+      perfil.email = authStore.usuario?.email ?? perfil.email.trim()
+
+      perfilOriginal.nombre = perfil.nombre
+
+      perfilOriginal.email = perfil.email
+
+      mostrarSnackbar('Perfil actualizado correctamente')
     } else {
-      mostrarSnackbar(data.mensaje ?? 'Error', 'error')
+      mostrarSnackbar(data.mensaje ?? 'No fue posible actualizar el perfil', 'error')
     }
-  } catch {
+  } catch (error) {
+    console.error('Error actualizando perfil:', error)
+
     mostrarSnackbar('Error actualizando perfil', 'error')
   } finally {
     guardandoPerfil.value = false
@@ -276,9 +748,12 @@ const guardarPerfil = async () => {
 }
 
 const cambiarPassword = async () => {
-  if (passwords.nuevo !== passwords.confirmar) return
+  if (guardandoPassword.value || !passwordValido.value) {
+    return
+  }
 
   guardandoPassword.value = true
+
   try {
     const { data } = await api.patch('/usuarios/cambiar-password', {
       password_actual: passwords.actual,
@@ -287,72 +762,581 @@ const cambiarPassword = async () => {
 
     if (data.ok) {
       mostrarSnackbar('Contraseña actualizada correctamente')
+
       passwords.actual = ''
       passwords.nuevo = ''
       passwords.confirmar = ''
+
+      mostrar.actual = false
+      mostrar.nuevo = false
+      mostrar.confirmar = false
     } else {
-      mostrarSnackbar(data.mensaje ?? 'Error', 'error')
+      mostrarSnackbar(data.mensaje ?? 'No fue posible cambiar la contraseña', 'error')
     }
-  } catch {
+  } catch (error) {
+    console.error('Error cambiando contraseña:', error)
+
     mostrarSnackbar('Error cambiando contraseña', 'error')
   } finally {
     guardandoPassword.value = false
   }
 }
 
-onMounted(async () => {
-  loadingStore.mostrar('Cargando perfil...')
+const cargarPerfil = async () => {
   await authStore.cargarUsuario()
 
   perfil.nombre = authStore.usuario?.nombre ?? ''
+
   perfil.email = authStore.usuario?.email ?? ''
 
-  const { data } = await api.get('/auth/me')
-  if (data.ok && data.data.avatar_url) {
-    avatarUrl.value = data.data.avatar_url
+  perfilOriginal.nombre = perfil.nombre
+
+  perfilOriginal.email = perfil.email
+
+  try {
+    const { data } = await api.get('/auth/me')
+
+    if (data.ok && data.data.avatar_url) {
+      avatarUrl.value = data.data.avatar_url
+    }
+  } catch (error) {
+    console.error('Error cargando avatar:', error)
   }
-  loadingStore.ocultar()
+}
+
+onMounted(async () => {
+  loadingStore.mostrar('Cargando perfil...')
+
+  try {
+    await cargarPerfil()
+  } finally {
+    loadingStore.ocultar()
+  }
 })
 </script>
 
 <style scoped>
-.perfil-banner {
-  height: 72px;
-  background: linear-gradient(135deg, #0d2461 0%, #1a3a8f 60%, #2952c4 100%);
+.profile-page {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.perfil-avatar-wrap {
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.page-header__main {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.page-header__icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.09);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: rgba(var(--v-theme-on-surface), 0.58);
+}
+
+.pending-chip {
+  font-weight: 600;
+}
+
+.identity-card {
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.profile-banner {
+  position: relative;
+  height: 112px;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--v-theme-primary)),
+    rgba(var(--v-theme-primary), 0.76)
+  );
+}
+
+.profile-banner__decoration {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-banner__decoration--one {
+  width: 130px;
+  height: 130px;
+  top: -70px;
+  right: -20px;
+}
+
+.profile-banner__decoration--two {
+  width: 90px;
+  height: 90px;
+  bottom: -55px;
+  left: 18px;
+}
+
+.avatar-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: -45px;
-  margin-bottom: 8px;
-}
-
-.avatar-ring {
-  border: 3px solid white;
-  box-shadow: 0 4px 14px rgba(26, 58, 143, 0.25);
+  margin-top: -55px;
 }
 
 .avatar-container {
   position: relative;
-  display: inline-block;
-  cursor: pointer;
+  display: inline-flex;
   border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-avatar {
+  border: 4px solid rgb(var(--v-theme-surface));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-size: 1.65rem;
+  font-weight: 750;
+  color: rgb(var(--v-theme-on-primary));
 }
 
 .avatar-overlay {
   position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.45);
+  inset: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
   opacity: 0;
+  background: rgba(0, 0, 0, 0.5);
   transition: opacity 0.2s ease;
 }
 
-.avatar-container:hover .avatar-overlay {
+.avatar-container:hover .avatar-overlay,
+.avatar-container--loading .avatar-overlay {
   opacity: 1;
+}
+
+.camera-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 29px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgb(var(--v-theme-surface));
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+}
+
+.identity-content {
+  padding: 13px 20px 20px;
+  text-align: center;
+}
+
+.identity-content h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.role-chip {
+  margin-top: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.profile-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.58);
+}
+
+.profile-email span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.avatar-help {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+
+.avatar-help__icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.avatar-help > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.avatar-help strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.avatar-help span {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: rgba(var(--v-theme-on-surface), 0.52);
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.card-header {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px;
+}
+
+.card-header__main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.card-header__icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.card-header__icon--security {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.08);
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.card-header p {
+  margin: 3px 0 0;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.card-content {
+  flex: 1;
+  padding: 20px !important;
+}
+
+.form-section-title {
+  margin-bottom: 14px;
+}
+
+.form-section-title span {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: rgba(var(--v-theme-on-surface), 0.68);
+}
+
+.profile-field :deep(.v-field__input) {
+  font-size: 0.86rem;
+}
+
+.profile-field :deep(.v-field-label) {
+  font-size: 0.8rem;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 19px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-primary), 0.045);
+}
+
+.account-info__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.account-info > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.account-info span {
+  font-size: 0.7rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.account-info strong {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.security-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-success), 0.055);
+}
+
+.security-notice__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.security-notice > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.security-notice strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.security-notice span {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: rgba(var(--v-theme-on-surface), 0.54);
+}
+
+.password-strength {
+  padding: 0 2px;
+}
+
+.password-strength__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.password-strength__header span,
+.password-strength__header strong {
+  font-size: 0.7rem;
+}
+
+.password-strength__header strong {
+  font-weight: 650;
+}
+
+.password-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+.password-requirements > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(var(--v-theme-on-surface), 0.47);
+}
+
+.password-requirements span {
+  font-size: 0.7rem;
+}
+
+.password-requirement--valid {
+  color: rgb(var(--v-theme-success)) !important;
+}
+
+.card-actions {
+  min-height: 64px;
+  padding: 10px 18px !important;
+}
+
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 1279px) {
+  .identity-card {
+    position: sticky;
+    top: 82px;
+  }
+}
+
+@media (max-width: 959px) {
+  .identity-card {
+    position: static;
+  }
+
+  .profile-banner {
+    height: 100px;
+  }
+
+  .identity-content {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .profile-page {
+    padding: 14px !important;
+  }
+
+  .page-header__main {
+    align-items: flex-start;
+  }
+
+  .page-header__icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+
+  .page-title {
+    font-size: 1.22rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .card-header {
+    padding: 14px;
+  }
+
+  .card-header p {
+    font-size: 0.7rem;
+  }
+
+  .card-content {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pending-chip {
+    display: none;
+  }
+
+  .page-header__icon {
+    display: none;
+  }
+
+  .profile-banner {
+    height: 90px;
+  }
+
+  .avatar-wrapper {
+    margin-top: -49px;
+  }
+
+  .profile-avatar {
+    width: 94px !important;
+    height: 94px !important;
+  }
+
+  .camera-badge {
+    width: 27px;
+    height: 27px;
+  }
+
+  .card-header p {
+    display: none;
+  }
+
+  .card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .card-actions .v-spacer {
+    display: none;
+  }
 }
 </style>
