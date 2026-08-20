@@ -74,6 +74,12 @@
           @click="mobile && (drawerOpen = false)"
         />
         <v-list-item
+          prepend-icon="mdi-cog-transfer"
+          title="Variadores"
+          to="/variadores"
+          @click="mobile && (drawerOpen = false)"
+        />
+        <v-list-item
           prepend-icon="mdi-weather-partly-cloudy"
           title="Meteorología"
           to="/meteorologia"

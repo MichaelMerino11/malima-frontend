@@ -74,6 +74,11 @@ const router = createRouter({
       name: 'alarmas',
       component: () => import('../views/AlarmasView.vue'),
     },
+    {
+      path: '/variadores',
+      name: 'variadores',
+      component: () => import('../views/VariadoresView.vue'),
+    },
   ],
 })
 
