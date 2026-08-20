@@ -38,7 +38,7 @@
         >
           <v-icon size="28" color="primary">mdi-greenhouse</v-icon>
           <p class="text-h5 font-weight-bold mt-1">{{ resumen.total }}</p>
-          <p class="text-caption text-medium-emphasis">Invernaderos</p>
+          <p class="text-caption text-medium-emphasis">Galpones</p>
         </v-card>
       </v-col>
       <v-col cols="6" sm="4" md="2">

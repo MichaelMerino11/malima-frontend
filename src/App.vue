@@ -86,6 +86,12 @@
           @click="mobile && (drawerOpen = false)"
         />
         <v-list-item
+          prepend-icon="mdi-alert"
+          title="Alarmas"
+          to="/alarmas"
+          @click="mobile && (drawerOpen = false)"
+        />
+        <v-list-item
           v-if="authStore.isAdmin"
           prepend-icon="mdi-cog"
           title="Configuración"
@@ -269,18 +275,20 @@ const verificarAlertas = async () => {
         const meteo = await api.get(`/tinker/ultimo-estado/${zona.id}`)
         if (meteo.data.ok && meteo.data.data.meteorologia) {
           const m = meteo.data.data.meteorologia
+
           if ((m.probabilidad_lluvia ?? 0) > 60) {
             notifStore.agregar({
               tipo: 'warning',
               titulo: `⚠️ Alerta de lluvia — ${zona.nombre}`,
-              mensaje: `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. Considere cerrar los invernaderos.`,
+              mensaje: `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. Considere cerrar los galpones.`,
             })
           }
+
           if (m.velocidad_viento > 40) {
             notifStore.agregar({
               tipo: 'warning',
               titulo: `💨 Viento fuerte — ${zona.nombre}`,
-              mensaje: `Velocidad del viento: ${m.velocidad_viento} km/h. Se recomienda cerrar los invernaderos.`,
+              mensaje: `Velocidad del viento: ${m.velocidad_viento} km/h. Se recomienda cerrar los galpones.`,
             })
           }
         }

@@ -4,7 +4,7 @@
     <v-row class="mb-4" align="center">
       <v-col>
         <h1 class="text-h5 font-weight-bold text-primary">Dashboard</h1>
-        <p class="text-body-2 text-medium-emphasis">Control general de invernaderos</p>
+        <p class="text-body-2 text-medium-emphasis">Control general de galpones</p>
       </v-col>
       <v-col cols="auto">
         <v-chip

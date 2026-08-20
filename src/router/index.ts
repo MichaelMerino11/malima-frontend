@@ -69,6 +69,11 @@ const router = createRouter({
       component: () => import('../views/NotFoundView.vue'),
       meta: { publica: true },
     },
+    {
+      path: '/alarmas',
+      name: 'alarmas',
+      component: () => import('../views/AlarmasView.vue'),
+    },
   ],
 })
 

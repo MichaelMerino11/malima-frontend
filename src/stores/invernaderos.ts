@@ -58,7 +58,7 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
         zonas.value = data.data
       }
     } catch (e) {
-      error.value = 'Error cargando zonas'
+      error.value = 'Error cargando galpones'
     } finally {
       cargando.value = false
     }

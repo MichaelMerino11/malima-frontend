@@ -13,7 +13,7 @@
           Volver
         </v-btn>
         <h1 class="text-h5 font-weight-bold text-primary">{{ zonaActual?.nombre ?? 'Zona' }}</h1>
-        <p class="text-body-2 text-medium-emphasis">Control individual de invernaderos</p>
+        <p class="text-body-2 text-medium-emphasis">Control individual de galpones</p>
       </v-col>
       <v-col cols="auto" class="d-flex gap-2">
         <v-btn

@@ -11,29 +11,60 @@
     <v-row>
       <v-col cols="12">
         <v-card rounded="lg" elevation="2">
-          <v-card-title class="d-flex align-center gap-2 pa-1">
+          <v-card-title class="d-flex align-center gap-2 pa-4">
             <v-icon color="primary">mdi-cog</v-icon>
-            <span class="text-body-1 font-weight-bold">Parámetros TinkerBoard</span>
+            <span class="text-body-1 font-weight-bold">Parámetros de TinkerBoard</span>
           </v-card-title>
-
           <v-divider />
-
           <v-card-text class="pa-4">
             <v-row>
-              <v-col v-for="config in configuraciones" :key="config.clave" cols="12" md="6">
+              <v-col v-for="config in tinkerConfigs" :key="config.clave" cols="12" md="6">
                 <p class="text-body-2 font-weight-medium mb-1">{{ config.descripcion }}</p>
                 <p class="text-caption text-medium-emphasis mb-2">{{ config.clave }}</p>
-                <div class="d-flex align-center">
+                <div class="d-flex gap-2 align-center">
                   <v-text-field
                     v-model="config.valor"
                     density="compact"
                     variant="outlined"
                     hide-details
-                    class="campo-config"
+                    class="flex-grow-1"
                   />
-
                   <v-btn
                     color="primary"
+                    variant="tonal"
+                    size="small"
+                    icon="mdi-content-save"
+                    :loading="guardando === config.clave"
+                    @click="guardar(config.clave, config.valor)"
+                  />
+                </div>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+
+        <v-card rounded="lg" elevation="2" class="mt-4">
+          <v-card-title class="d-flex align-center gap-2 pa-4">
+            <v-icon color="warning">mdi-alert</v-icon>
+            <span class="text-body-1 font-weight-bold">Umbrales de alerta</span>
+          </v-card-title>
+          <v-divider />
+          <v-card-text class="pa-4">
+            <v-row>
+              <v-col v-for="config in umbralConfigs" :key="config.clave" cols="12" md="6">
+                <p class="text-body-2 font-weight-medium mb-1">{{ config.descripcion }}</p>
+                <p class="text-caption text-medium-emphasis mb-2">{{ config.clave }}</p>
+                <div class="d-flex gap-2 align-center">
+                  <v-text-field
+                    v-model="config.valor"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    type="number"
+                    class="flex-grow-1"
+                  />
+                  <v-btn
+                    color="warning"
                     variant="tonal"
                     size="small"
                     icon="mdi-content-save"
@@ -55,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import api from '../api/axios'
 import { useLoadingStore } from '../stores/loading'
 
@@ -96,6 +127,21 @@ onMounted(async () => {
   await cargar()
   loadingStore.ocultar()
 })
+
+const tinkerConfigs = computed(() =>
+  configuraciones.value.filter((c) =>
+    [
+      'tinkerboard_url',
+      'tinkerboard_endpoint_comando',
+      'tinkerboard_timeout',
+      'automatizacion_intervalo',
+    ].includes(c.clave),
+  ),
+)
+
+const umbralConfigs = computed(() =>
+  configuraciones.value.filter((c) => c.clave.startsWith('umbral_')),
+)
 </script>
 
 <style scoped>
