@@ -126,10 +126,26 @@
           <v-card rounded="lg" elevation="2" class="pa-3 text-center h-100">
             <v-icon size="32" color="blue">mdi-weather-rainy</v-icon>
             <p class="text-h5 font-weight-bold mt-1">{{ datos.probabilidad_lluvia ?? 0 }}%</p>
-            <p class="text-caption text-medium-emphasis">Prob. lluvia</p>
+            <p class="text-caption text-medium-emphasis">Probabilidad de lluvia</p>
             <v-progress-linear
               :model-value="datos.probabilidad_lluvia ?? 0"
               :color="(datos.probabilidad_lluvia ?? 0) > 60 ? 'error' : 'blue'"
+              rounded
+              height="4"
+              class="mt-2"
+            />
+          </v-card>
+        </v-col>
+        <v-col cols="6" sm="4" md="2">
+          <v-card rounded="lg" elevation="2" class="pa-3 text-center h-100">
+            <v-icon size="32" color="purple">mdi-gauge</v-icon>
+            <p class="font-weight-bold mt-1" :class="mobile ? 'text-h6' : 'text-h5'">
+              {{ datos?.presion_atmosferica ?? '--' }} <span class="text-body-2">hPa</span>
+            </p>
+            <p class="text-body-2 text-medium-emphasis">Presión atmosférica</p>
+            <v-progress-linear
+              :model-value="((datos?.presion_atmosferica ?? 1013) / 1100) * 100"
+              color="purple"
               rounded
               height="4"
               class="mt-2"
@@ -308,6 +324,29 @@
                     (datos.probabilidad_lluvia ?? 0) > 60
                       ? 'Inminente — cerrar invernaderos'
                       : 'Sin riesgo'
+                  }}
+                </v-list-item-subtitle>
+              </v-list-item>
+              <v-divider />
+              <v-list-item>
+                <template #prepend>
+                  <v-icon
+                    :color="(datos?.presion_atmosferica ?? 1013) < 1000 ? 'warning' : 'success'"
+                    size="20"
+                  >
+                    {{
+                      (datos?.presion_atmosferica ?? 1013) < 1000
+                        ? 'mdi-alert-circle'
+                        : 'mdi-check-circle'
+                    }}
+                  </v-icon>
+                </template>
+                <v-list-item-title class="text-body-2">Presión atmosférica</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{
+                    (datos?.presion_atmosferica ?? 1013) < 1000
+                      ? 'Baja — posible tormenta'
+                      : 'Normal'
                   }}
                 </v-list-item-subtitle>
               </v-list-item>

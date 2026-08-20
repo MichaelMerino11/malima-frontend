@@ -10,6 +10,7 @@ export interface DatoMeteorologico {
   velocidad_viento: number
   radiacion_solar: number
   probabilidad_lluvia: number
+  presion_atmosferica: number
   registrado_at: string
 }
 
