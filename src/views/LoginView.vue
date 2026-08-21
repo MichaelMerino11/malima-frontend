@@ -2,7 +2,6 @@
   <v-app>
     <v-main>
       <div class="login-container">
-        <!-- Panel izquierdo — decorativo -->
         <div class="login-left">
           <div class="login-left-content">
             <div class="circles">
@@ -10,93 +9,197 @@
               <div class="circle circle-2" />
               <div class="circle circle-3" />
             </div>
+
             <img src="/logo_malima.png" class="logo-left fade-in" height="140" />
+
             <h1 class="login-title fade-in-delay-1">Sistema de Automatización</h1>
-            <p class="login-subtitle fade-in-delay-2">
-              Control inteligente de invernaderos
-            </p>
+
+            <p class="login-subtitle fade-in-delay-2">Control inteligente de invernaderos</p>
           </div>
         </div>
 
-        <!-- Panel derecho — formulario -->
         <div class="login-right">
           <div class="login-form-container slide-in">
-            <div class="text-center mb-8">
-              <img src="/logo_malima_icono.png" height="56" class="logo-icono" />
-              <h2 class="form-title mt-3">Bienvenido</h2>
-              <p class="form-subtitle">Ingresa tus credenciales para continuar</p>
-            </div>
+            <v-card v-if="!requiereMFA" rounded="lg" elevation="3" class="pa-6">
+              <div class="text-center mb-8">
+                <img src="/logo_malima_icono.png" height="56" class="logo-icono" />
 
-            <div class="form-field mb-4">
-              <label class="field-label">Correo electrónico</label>
-              <div class="field-wrapper" :class="{ focused: focusEmail, filled: form.email }">
-                <v-icon class="field-icon" size="18">mdi-email-outline</v-icon>
-                <input
-                  v-model="form.email"
-                  type="email"
-                  autocomplete="email"
-                  placeholder="tu@correo.com"
-                  class="field-input"
-                  @focus="focusEmail = true"
-                  @blur="focusEmail = false"
-                  @keyup.enter="handleLogin"
-                />
+                <h2 class="form-title mt-3">Bienvenido</h2>
+
+                <p class="form-subtitle">Ingresa tus credenciales para continuar</p>
               </div>
-              <span v-if="errores.email" class="field-error">{{ errores.email }}</span>
-            </div>
 
-            <div class="form-field mb-6">
-              <label class="field-label">Contraseña</label>
-              <div class="field-wrapper" :class="{ focused: focusPassword, filled: form.password }">
-                <v-icon class="field-icon" size="18">mdi-lock-outline</v-icon>
-                <input
-                  v-model="form.password"
-                  :type="mostrarPassword ? 'text' : 'password'"
-                  autocomplete="current-password"
-                  placeholder="••••••••"
-                  class="field-input"
-                  @focus="focusPassword = true"
-                  @blur="focusPassword = false"
-                  @keyup.enter="handleLogin"
-                />
-                <v-icon
-                  class="field-icon-right"
-                  size="18"
-                  style="cursor: pointer"
-                  @click="mostrarPassword = !mostrarPassword"
+              <div class="form-field mb-4">
+                <label class="field-label"> Correo electrónico </label>
+
+                <div
+                  class="field-wrapper"
+                  :class="{
+                    focused: focusEmail,
+                    filled: form.email,
+                  }"
                 >
-                  {{ mostrarPassword ? 'mdi-eye-off' : 'mdi-eye' }}
-                </v-icon>
+                  <v-icon class="field-icon" size="18"> mdi-email-outline </v-icon>
+
+                  <input
+                    v-model="form.email"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="tu@correo.com"
+                    class="field-input"
+                    @focus="focusEmail = true"
+                    @blur="focusEmail = false"
+                    @keyup.enter="handleLogin"
+                  />
+                </div>
+
+                <span v-if="errores.email" class="field-error">
+                  {{ errores.email }}
+                </span>
               </div>
-              <span v-if="errores.password" class="field-error">{{ errores.password }}</span>
-            </div>
 
-            <transition name="shake">
-              <div v-if="errorGeneral" class="error-alert mb-4">
-                <v-icon size="16" color="error">mdi-alert-circle</v-icon>
-                <span>{{ errorGeneral }}</span>
+              <div class="form-field mb-6">
+                <label class="field-label"> Contraseña </label>
+
+                <div
+                  class="field-wrapper"
+                  :class="{
+                    focused: focusPassword,
+                    filled: form.password,
+                  }"
+                >
+                  <v-icon class="field-icon" size="18"> mdi-lock-outline </v-icon>
+
+                  <input
+                    v-model="form.password"
+                    :type="mostrarPassword ? 'text' : 'password'"
+                    autocomplete="current-password"
+                    placeholder="••••••••"
+                    class="field-input"
+                    @focus="focusPassword = true"
+                    @blur="focusPassword = false"
+                    @keyup.enter="handleLogin"
+                  />
+
+                  <v-icon
+                    class="field-icon-right"
+                    size="18"
+                    style="cursor: pointer"
+                    @click="mostrarPassword = !mostrarPassword"
+                  >
+                    {{ mostrarPassword ? 'mdi-eye-off' : 'mdi-eye' }}
+                  </v-icon>
+                </div>
+
+                <span v-if="errores.password" class="field-error">
+                  {{ errores.password }}
+                </span>
               </div>
-            </transition>
 
-            <button
-              class="login-btn"
-              :class="{ loading: cargando }"
-              :disabled="cargando"
-              @click="handleLogin"
-            >
-              <span v-if="!cargando" class="btn-content">
-                <v-icon size="18" class="mr-2">mdi-login</v-icon>
-                Ingresar
-              </span>
-              <span v-else class="btn-content">
-                <div class="btn-spinner" />
-                Verificando...
-              </span>
-            </button>
+              <transition name="shake">
+                <div v-if="errorGeneral" class="error-alert mb-4">
+                  <v-icon size="16" color="error"> mdi-alert-circle </v-icon>
 
-            <div class="text-center mt-4">
-              <a href="/restablecer-password" class="forgot-link"> ¿Olvidaste tu contraseña? </a>
-            </div>
+                  <span>
+                    {{ errorGeneral }}
+                  </span>
+                </div>
+              </transition>
+
+              <button
+                class="login-btn"
+                :class="{ loading: cargando }"
+                :disabled="cargando"
+                @click="handleLogin"
+              >
+                <span v-if="!cargando" class="btn-content">
+                  <v-icon size="18" class="mr-2"> mdi-login </v-icon>
+
+                  Ingresar
+                </span>
+
+                <span v-else class="btn-content">
+                  <div class="btn-spinner" />
+                  Verificando...
+                </span>
+              </button>
+
+              <div class="text-center mt-4">
+                <a href="/restablecer-password" class="forgot-link"> ¿Olvidaste tu contraseña? </a>
+              </div>
+            </v-card>
+
+            <v-card v-else rounded="lg" elevation="3" class="pa-6">
+              <div class="text-center mb-6">
+                <img src="/logo_malima_icono.png" height="56" class="logo-icono" />
+
+                <h2 class="form-title mt-3">Verificación en dos pasos</h2>
+
+                <p class="form-subtitle">Confirma tu identidad para continuar</p>
+              </div>
+
+              <p class="text-body-2 text-medium-emphasis mb-4">
+                Abre Google Authenticator e ingresa el código de 6 dígitos.
+              </p>
+
+              <div class="form-field mb-4">
+                <label class="field-label"> Código de verificación </label>
+
+                <div class="field-wrapper" :class="{ focused: focusMFA }">
+                  <v-icon class="field-icon" size="18"> mdi-shield-key </v-icon>
+
+                  <input
+                    v-model="codigoMFA"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    placeholder="000000"
+                    class="field-input"
+                    style="letter-spacing: 8px; font-size: 20px; font-weight: bold"
+                    @focus="focusMFA = true"
+                    @blur="focusMFA = false"
+                    @keyup.enter="handleMFA"
+                  />
+                </div>
+              </div>
+
+              <!-- Error MFA -->
+              <transition name="shake">
+                <div v-if="errorGeneral" class="error-alert mb-4">
+                  <v-icon size="16" color="error"> mdi-alert-circle </v-icon>
+
+                  <span>
+                    {{ errorGeneral }}
+                  </span>
+                </div>
+              </transition>
+
+              <!-- Botón verificar -->
+              <button
+                class="login-btn"
+                :class="{ loading: cargandoMFA }"
+                :disabled="cargandoMFA"
+                @click="handleMFA"
+              >
+                <span v-if="!cargandoMFA" class="btn-content">
+                  <v-icon size="18" class="mr-2"> mdi-shield-check </v-icon>
+
+                  Verificar
+                </span>
+
+                <span v-else class="btn-content">
+                  <div class="btn-spinner" />
+                  Verificando...
+                </span>
+              </button>
+
+              <!-- Volver al login -->
+              <div class="text-center mt-3">
+                <a href="#" class="forgot-link" @click.prevent="volverAlLogin">
+                  ← Volver al login
+                </a>
+              </div>
+            </v-card>
           </div>
         </div>
       </div>
@@ -105,6 +208,7 @@
 </template>
 
 <script setup lang="ts">
+import api from '../api/axios'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
@@ -112,38 +216,71 @@ import { useAuthStore } from '../stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const form = reactive({ email: '', password: '' })
-const errores = reactive({ email: '', password: '' })
+const requiereMFA = ref(false)
+const emailMFA = ref('')
+const codigoMFA = ref('')
+const cargandoMFA = ref(false)
+const focusMFA = ref(false)
+
+const form = reactive({
+  email: '',
+  password: '',
+})
+
+const errores = reactive({
+  email: '',
+  password: '',
+})
+
 const errorGeneral = ref('')
 const cargando = ref(false)
 const mostrarPassword = ref(false)
+
 const focusEmail = ref(false)
 const focusPassword = ref(false)
 
 const validar = () => {
   errores.email = ''
   errores.password = ''
+
   let valido = true
+
   if (!form.email) {
     errores.email = 'El correo es requerido'
     valido = false
   }
+
   if (!form.password) {
     errores.password = 'La contraseña es requerida'
     valido = false
   }
+
   return valido
 }
 
 const handleLogin = async () => {
   if (!validar()) return
+
   cargando.value = true
   errorGeneral.value = ''
+
   try {
     const res = await authStore.login(form.email, form.password)
-    if (res.ok) {
+
+    // Usuario tiene MFA activado
+    if (res.ok && res.requiere_mfa) {
+      requiereMFA.value = true
+      emailMFA.value = form.email
+      codigoMFA.value = ''
+    }
+
+    // Usuario NO tiene MFA
+    else if (res.ok) {
       router.push('/home')
-    } else {
+    }
+
+    // Login incorrecto
+    else {
       errorGeneral.value = res.mensaje ?? 'Error al iniciar sesión'
     }
   } catch {
@@ -151,6 +288,59 @@ const handleLogin = async () => {
   } finally {
     cargando.value = false
   }
+}
+
+const handleMFA = async () => {
+  if (!codigoMFA.value) {
+    errorGeneral.value = 'Ingresa el código de verificación'
+    return
+  }
+
+  if (codigoMFA.value.length !== 6) {
+    errorGeneral.value = 'El código debe tener 6 dígitos'
+    return
+  }
+
+  cargandoMFA.value = true
+  errorGeneral.value = ''
+
+  try {
+    const { data } = await api.post('/auth/mfa/validar-login', {
+      email: emailMFA.value,
+      codigo: codigoMFA.value,
+    })
+
+    if (data.ok) {
+      // Guardar token
+      authStore.token = data.token
+
+      // Guardar usuario
+      authStore.usuario = data.usuario
+
+      // Guardar token en localStorage
+      localStorage.setItem('token', data.token)
+
+      // Configurar token para las siguientes peticiones
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
+
+      // Ir al home
+      router.push('/home')
+    } else {
+      errorGeneral.value = data.mensaje ?? 'Código incorrecto'
+    }
+  } catch {
+    errorGeneral.value = 'No se pudo verificar el código'
+  } finally {
+    cargandoMFA.value = false
+  }
+}
+
+const volverAlLogin = () => {
+  requiereMFA.value = false
+  emailMFA.value = ''
+  codigoMFA.value = ''
+  errorGeneral.value = ''
+  focusMFA.value = false
 }
 </script>
 

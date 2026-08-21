@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="profile-page pa-4 pa-md-6">
-    <div class="page-header mb-6">
+    <div class="page-header mb-5">
       <div class="page-header__main">
         <div class="page-header__icon">
           <v-icon size="26"> mdi-account-circle-outline </v-icon>
@@ -21,6 +21,14 @@
 
               Cambios sin guardar
             </v-chip>
+
+            <v-chip :color="mfaActivo ? 'success' : 'warning'" variant="tonal" size="small">
+              <v-icon start size="15">
+                {{ mfaActivo ? 'mdi-shield-check-outline' : 'mdi-shield-alert-outline' }}
+              </v-icon>
+
+              {{ mfaActivo ? 'Cuenta protegida' : 'Seguridad básica' }}
+            </v-chip>
           </div>
 
           <p class="page-subtitle">
@@ -30,104 +38,222 @@
       </div>
     </div>
 
-    <v-row>
+    <v-row align="start">
       <v-col cols="12" lg="4" xl="3">
-        <v-card rounded="xl" elevation="0" class="identity-card">
-          <div class="profile-banner">
-            <div class="profile-banner__decoration profile-banner__decoration--one" />
-            <div class="profile-banner__decoration profile-banner__decoration--two" />
-          </div>
+        <div class="profile-sidebar">
+          <v-card rounded="xl" elevation="0" class="identity-card">
+            <div class="profile-banner">
+              <div class="profile-banner__decoration profile-banner__decoration--one" />
 
-          <div class="avatar-wrapper">
-            <div
-              class="avatar-container"
-              :class="{
-                'avatar-container--loading': subiendoAvatar,
-              }"
-              @click="triggerFileInput"
-            >
-              <v-avatar size="106" color="primary" class="profile-avatar">
-                <img v-if="avatarUrl" :src="avatarUrl" alt="Foto de perfil" class="avatar-image" />
+              <div class="profile-banner__decoration profile-banner__decoration--two" />
+            </div>
 
-                <span v-else class="avatar-initials">
-                  {{ iniciales }}
+            <div class="avatar-wrapper">
+              <div
+                class="avatar-container"
+                :class="{
+                  'avatar-container--loading': subiendoAvatar,
+                }"
+                @click="triggerFileInput"
+              >
+                <v-avatar size="104" color="primary" class="profile-avatar">
+                  <img
+                    v-if="avatarUrl"
+                    :src="avatarUrl"
+                    alt="Foto de perfil"
+                    class="avatar-image"
+                  />
+
+                  <span v-else class="avatar-initials">
+                    {{ iniciales }}
+                  </span>
+                </v-avatar>
+
+                <div class="avatar-overlay">
+                  <v-icon v-if="!subiendoAvatar" color="white" size="24">
+                    mdi-camera-outline
+                  </v-icon>
+
+                  <v-progress-circular v-else indeterminate color="white" size="28" width="3" />
+                </div>
+
+                <div class="camera-badge">
+                  <v-icon size="15" color="white"> mdi-camera </v-icon>
+                </div>
+
+                <input
+                  ref="fileInput"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  class="d-none"
+                  @change="subirAvatar"
+                />
+              </div>
+            </div>
+
+            <div class="identity-content">
+              <h2>
+                {{ perfil.nombre || 'Usuario' }}
+              </h2>
+
+              <v-chip color="primary" variant="tonal" size="small" class="role-chip">
+                <v-icon start size="14">
+                  {{ iconoRol }}
+                </v-icon>
+
+                {{ rolUsuario }}
+              </v-chip>
+
+              <div class="profile-email">
+                <v-icon size="16"> mdi-email-outline </v-icon>
+
+                <span>
+                  {{ perfil.email || 'Sin correo registrado' }}
                 </span>
-              </v-avatar>
-
-              <div class="avatar-overlay">
-                <v-icon v-if="!subiendoAvatar" color="white" size="24"> mdi-camera-outline </v-icon>
-
-                <v-progress-circular v-else indeterminate color="white" size="28" width="3" />
               </div>
 
-              <div class="camera-badge">
-                <v-icon size="15" color="white"> mdi-camera </v-icon>
+              <v-divider class="my-4" />
+
+              <div class="account-overview">
+                <div class="account-overview__item">
+                  <div class="account-overview__icon account-overview__icon--success">
+                    <v-icon size="17"> mdi-account-check-outline </v-icon>
+                  </div>
+
+                  <div>
+                    <span>Estado</span>
+                    <strong class="text-success"> Activa </strong>
+                  </div>
+                </div>
+
+                <div class="account-overview__divider" />
+
+                <div class="account-overview__item">
+                  <div
+                    class="account-overview__icon"
+                    :class="
+                      mfaActivo
+                        ? 'account-overview__icon--success'
+                        : 'account-overview__icon--warning'
+                    "
+                  >
+                    <v-icon size="17">
+                      {{ mfaActivo ? 'mdi-shield-check-outline' : 'mdi-shield-outline' }}
+                    </v-icon>
+                  </div>
+
+                  <div>
+                    <span>MFA</span>
+
+                    <strong :class="mfaActivo ? 'text-success' : 'text-warning'">
+                      {{ mfaActivo ? 'Activo' : 'Inactivo' }}
+                    </strong>
+                  </div>
+                </div>
               </div>
 
-              <input
-                ref="fileInput"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                class="d-none"
-                @change="subirAvatar"
+              <div class="avatar-help">
+                <div class="avatar-help__icon">
+                  <v-icon size="18"> mdi-image-outline </v-icon>
+                </div>
+
+                <div>
+                  <strong> Foto de perfil </strong>
+
+                  <span> JPG, PNG o WebP · Máximo 2 MB </span>
+                </div>
+              </div>
+
+              <v-btn
+                variant="tonal"
+                color="primary"
+                rounded="lg"
+                block
+                prepend-icon="mdi-camera-outline"
+                :loading="subiendoAvatar"
+                class="mt-3"
+                @click="triggerFileInput"
+              >
+                Cambiar fotografía
+              </v-btn>
+            </div>
+          </v-card>
+
+          <v-card rounded="xl" elevation="0" class="mfa-card">
+            <div class="mfa-card__header">
+              <div
+                class="mfa-card__icon"
+                :class="{
+                  'mfa-card__icon--active': mfaActivo,
+                }"
+              >
+                <v-icon size="21">
+                  {{ mfaActivo ? 'mdi-shield-check' : 'mdi-shield-lock-outline' }}
+                </v-icon>
+              </div>
+
+              <div class="mfa-card__title">
+                <strong> Verificación en dos pasos </strong>
+
+                <span> Protección adicional de acceso </span>
+              </div>
+
+              <span
+                class="mfa-status-dot"
+                :class="{
+                  'mfa-status-dot--active': mfaActivo,
+                }"
               />
             </div>
-          </div>
 
-          <div class="identity-content">
-            <h2>
-              {{ perfil.nombre || 'Usuario' }}
-            </h2>
+            <div v-if="mfaActivo" class="mfa-active-state">
+              <div class="mfa-active-state__main">
+                <v-icon color="success" size="21"> mdi-check-decagram-outline </v-icon>
 
-            <v-chip color="primary" variant="tonal" size="small" class="role-chip">
-              <v-icon start size="14">
-                {{ iconoRol }}
-              </v-icon>
+                <div>
+                  <strong> Protección reforzada </strong>
 
-              {{ rolUsuario }}
-            </v-chip>
-
-            <div class="profile-email">
-              <v-icon size="16"> mdi-email-outline </v-icon>
-
-              <span>
-                {{ perfil.email || 'Sin correo registrado' }}
-              </span>
-            </div>
-
-            <v-divider class="my-5" />
-
-            <div class="avatar-help">
-              <div class="avatar-help__icon">
-                <v-icon size="18"> mdi-image-outline </v-icon>
+                  <span> Se solicitará un código adicional al iniciar sesión. </span>
+                </div>
               </div>
 
-              <div>
-                <strong> Foto de perfil </strong>
-
-                <span> JPG, PNG o WebP. Máximo 2 MB. </span>
-              </div>
+              <v-btn
+                color="error"
+                variant="tonal"
+                rounded="lg"
+                size="small"
+                block
+                prepend-icon="mdi-shield-off-outline"
+                class="mt-3"
+                @click="modalDesactivarMFA = true"
+              >
+                Desactivar MFA
+              </v-btn>
             </div>
 
-            <v-btn
-              variant="tonal"
-              color="primary"
-              rounded="lg"
-              block
-              prepend-icon="mdi-camera-outline"
-              :loading="subiendoAvatar"
-              class="mt-4"
-              @click="triggerFileInput"
-            >
-              Cambiar fotografía
-            </v-btn>
-          </div>
-        </v-card>
+            <div v-else class="mfa-inactive-state">
+              <p>
+                Protege tu cuenta con Google Authenticator y un código adicional al iniciar sesión.
+              </p>
+
+              <v-btn
+                color="success"
+                variant="tonal"
+                rounded="lg"
+                block
+                prepend-icon="mdi-shield-plus-outline"
+                @click="iniciarActivacionMFA"
+              >
+                Activar MFA
+              </v-btn>
+            </div>
+          </v-card>
+        </div>
       </v-col>
 
       <v-col cols="12" lg="8" xl="9">
-        <v-row>
-          <v-col cols="12" xl="6">
+        <v-row align="stretch">
+          <v-col cols="12" md="6">
             <v-card rounded="xl" elevation="0" class="profile-card h-100">
               <div class="card-header">
                 <div class="card-header__main">
@@ -150,9 +276,7 @@
               <v-divider />
 
               <v-card-text class="card-content">
-                <div class="form-section-title">
-                  <span> Información de la cuenta </span>
-                </div>
+                <div class="form-section-title">Información de la cuenta</div>
 
                 <v-text-field
                   v-model="perfil.nombre"
@@ -164,7 +288,7 @@
                   prepend-inner-icon="mdi-account-outline"
                   :error-messages="errorNombre"
                   hide-details="auto"
-                  class="profile-field mb-5"
+                  class="profile-field mb-4"
                 />
 
                 <v-text-field
@@ -181,20 +305,69 @@
                   class="profile-field"
                 />
 
-                <div class="account-info">
-                  <div class="account-info__icon">
-                    <v-icon size="18"> mdi-shield-account-outline </v-icon>
+                <div class="account-details">
+                  <div class="account-detail">
+                    <div class="account-detail__icon">
+                      <v-icon size="17"> mdi-identifier </v-icon>
+                    </div>
+
+                    <div>
+                      <span> ID de usuario </span>
+
+                      <strong>
+                        {{ authStore.usuario?.id ?? '—' }}
+                      </strong>
+                    </div>
                   </div>
 
-                  <div>
-                    <span> Rol asignado </span>
+                  <div class="account-detail">
+                    <div class="account-detail__icon">
+                      <v-icon size="17">
+                        {{ iconoRol }}
+                      </v-icon>
+                    </div>
 
-                    <strong>
-                      {{ rolUsuario }}
-                    </strong>
+                    <div>
+                      <span> Rol asignado </span>
+
+                      <strong>
+                        {{ rolUsuario }}
+                      </strong>
+                    </div>
                   </div>
 
-                  <v-chip color="success" variant="tonal" size="x-small"> Activo </v-chip>
+                  <div class="account-detail">
+                    <div class="account-detail__icon account-detail__icon--success">
+                      <v-icon size="17"> mdi-account-check-outline </v-icon>
+                    </div>
+
+                    <div>
+                      <span> Estado </span>
+
+                      <strong class="text-success"> Cuenta activa </strong>
+                    </div>
+                  </div>
+
+                  <div class="account-detail">
+                    <div
+                      class="account-detail__icon"
+                      :class="
+                        mfaActivo
+                          ? 'account-detail__icon--success'
+                          : 'account-detail__icon--warning'
+                      "
+                    >
+                      <v-icon size="17"> mdi-shield-account-outline </v-icon>
+                    </div>
+
+                    <div>
+                      <span> Seguridad </span>
+
+                      <strong>
+                        {{ mfaActivo ? 'MFA activado' : 'MFA desactivado' }}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
               </v-card-text>
 
@@ -222,7 +395,7 @@
             </v-card>
           </v-col>
 
-          <v-col cols="12" xl="6">
+          <v-col cols="12" md="6">
             <v-card rounded="xl" elevation="0" class="profile-card h-100">
               <div class="card-header">
                 <div class="card-header__main">
@@ -231,9 +404,9 @@
                   </div>
 
                   <div>
-                    <h2>Seguridad</h2>
+                    <h2>Cambiar contraseña</h2>
 
-                    <p>Actualiza la contraseña utilizada para iniciar sesión</p>
+                    <p>Actualiza las credenciales de acceso de tu cuenta</p>
                   </div>
                 </div>
               </div>
@@ -265,7 +438,7 @@
                   prepend-inner-icon="mdi-lock-outline"
                   :append-inner-icon="mostrar.actual ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
                   hide-details="auto"
-                  class="profile-field mb-4"
+                  class="profile-field mb-3"
                   @click:append-inner="mostrar.actual = !mostrar.actual"
                 />
 
@@ -284,7 +457,7 @@
                   @click:append-inner="mostrar.nuevo = !mostrar.nuevo"
                 />
 
-                <div v-if="passwords.nuevo" class="password-strength mb-4">
+                <div v-if="passwords.nuevo" class="password-strength mb-3">
                   <div class="password-strength__header">
                     <span> Seguridad de la contraseña </span>
 
@@ -323,7 +496,7 @@
                       'password-requirement--valid': passwords.nuevo.length >= 8,
                     }"
                   >
-                    <v-icon size="15">
+                    <v-icon size="16">
                       {{ passwords.nuevo.length >= 8 ? 'mdi-check-circle' : 'mdi-circle-small' }}
                     </v-icon>
 
@@ -335,7 +508,7 @@
                       'password-requirement--valid': tieneNumero,
                     }"
                   >
-                    <v-icon size="15">
+                    <v-icon size="16">
                       {{ tieneNumero ? 'mdi-check-circle' : 'mdi-circle-small' }}
                     </v-icon>
 
@@ -347,7 +520,7 @@
                       'password-requirement--valid': passwordsCoinciden,
                     }"
                   >
-                    <v-icon size="15">
+                    <v-icon size="16">
                       {{ passwordsCoinciden ? 'mdi-check-circle' : 'mdi-circle-small' }}
                     </v-icon>
 
@@ -376,8 +549,251 @@
             </v-card>
           </v-col>
         </v-row>
+
+        <v-card rounded="xl" elevation="0" class="security-summary-card mt-4">
+          <div class="security-summary__header">
+            <div class="security-summary__title">
+              <div class="security-summary__icon">
+                <v-icon size="21"> mdi-shield-account-outline </v-icon>
+              </div>
+
+              <div>
+                <h2>Estado de seguridad de la cuenta</h2>
+
+                <p>Resumen de las medidas de protección configuradas actualmente</p>
+              </div>
+            </div>
+
+            <v-chip :color="mfaActivo ? 'success' : 'warning'" variant="tonal" size="small">
+              <v-icon start size="15">
+                {{ mfaActivo ? 'mdi-shield-check' : 'mdi-shield-alert-outline' }}
+              </v-icon>
+
+              {{ mfaActivo ? 'Protección reforzada' : 'Mejora recomendada' }}
+            </v-chip>
+          </div>
+
+          <v-divider />
+
+          <div class="security-summary__content">
+            <div class="security-status-item">
+              <div class="security-status-item__icon">
+                <v-icon size="20"> mdi-lock-check-outline </v-icon>
+              </div>
+
+              <div>
+                <span> Contraseña </span>
+
+                <strong> Configurada </strong>
+              </div>
+
+              <v-icon color="success" size="20"> mdi-check-circle </v-icon>
+            </div>
+
+            <div class="security-status-item">
+              <div
+                class="security-status-item__icon"
+                :class="{
+                  'security-status-item__icon--success': mfaActivo,
+                  'security-status-item__icon--warning': !mfaActivo,
+                }"
+              >
+                <v-icon size="20"> mdi-two-factor-authentication </v-icon>
+              </div>
+
+              <div>
+                <span> Verificación MFA </span>
+
+                <strong>
+                  {{ mfaActivo ? 'Activada' : 'No configurada' }}
+                </strong>
+              </div>
+
+              <v-icon :color="mfaActivo ? 'success' : 'warning'" size="20">
+                {{ mfaActivo ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+              </v-icon>
+            </div>
+
+            <div class="security-status-item">
+              <div class="security-status-item__icon">
+                <v-icon size="20"> mdi-account-check-outline </v-icon>
+              </div>
+
+              <div>
+                <span> Estado de cuenta </span>
+
+                <strong> Activa </strong>
+              </div>
+
+              <v-icon color="success" size="20"> mdi-check-circle </v-icon>
+            </div>
+          </div>
+        </v-card>
       </v-col>
     </v-row>
+
+    <v-dialog v-model="modalActivarMFA" max-width="480" persistent>
+      <v-card rounded="xl" elevation="12" class="mfa-dialog">
+        <div class="dialog-header">
+          <div class="dialog-header__icon dialog-header__icon--success">
+            <v-icon size="24"> mdi-shield-key-outline </v-icon>
+          </div>
+
+          <div>
+            <h2>Activar verificación en dos pasos</h2>
+
+            <p>Configura Google Authenticator para proteger tu cuenta</p>
+          </div>
+        </div>
+
+        <v-divider />
+
+        <v-card-text class="dialog-content">
+          <div v-if="qrCode" class="qr-section">
+            <span class="qr-step"> Paso 1 </span>
+
+            <h3>Escanea el código QR</h3>
+
+            <p>Abre Google Authenticator y escanea este código.</p>
+
+            <div class="qr-wrapper">
+              <img :src="qrCode" alt="Código QR MFA" />
+            </div>
+
+            <div class="secret-code">
+              <div>
+                <span> Código manual </span>
+
+                <strong>
+                  {{ mfaSecret }}
+                </strong>
+              </div>
+
+              <v-tooltip text="Copiar código" location="top">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    @click="copiarSecret"
+                  >
+                    <v-icon size="17"> mdi-content-copy </v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+            </div>
+          </div>
+
+          <v-divider class="my-5" />
+
+          <div class="verification-section">
+            <span class="qr-step"> Paso 2 </span>
+
+            <h3>Confirma la configuración</h3>
+
+            <p>Ingresa el código de 6 dígitos generado por la aplicación.</p>
+
+            <v-text-field
+              v-model="codigoActivacion"
+              label="Código de verificación"
+              placeholder="000000"
+              maxlength="6"
+              inputmode="numeric"
+              variant="outlined"
+              density="comfortable"
+              rounded="lg"
+              prepend-inner-icon="mdi-shield-key-outline"
+              hide-details
+              class="profile-field mt-3 verification-input"
+              @keydown.enter="activarMFA"
+            />
+          </div>
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="dialog-actions">
+          <v-btn variant="text" rounded="lg" @click="cerrarModalActivar"> Cancelar </v-btn>
+
+          <v-spacer />
+
+          <v-btn
+            color="success"
+            variant="tonal"
+            rounded="lg"
+            prepend-icon="mdi-shield-check-outline"
+            :loading="guardandoMFA"
+            :disabled="codigoActivacion.length !== 6"
+            @click="activarMFA"
+          >
+            Activar MFA
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="modalDesactivarMFA" max-width="420" persistent>
+      <v-card rounded="xl" elevation="12" class="mfa-dialog">
+        <div class="disable-mfa-header">
+          <div class="disable-mfa-header__icon">
+            <v-icon size="30" color="error"> mdi-shield-off-outline </v-icon>
+          </div>
+
+          <h2>Desactivar MFA</h2>
+
+          <p>Esta acción reducirá el nivel de seguridad de tu cuenta.</p>
+        </div>
+
+        <v-divider />
+
+        <v-card-text class="dialog-content">
+          <div class="danger-notice">
+            <v-icon size="19" color="warning"> mdi-alert-outline </v-icon>
+
+            <span>
+              Después de desactivarlo solo necesitarás tu correo y contraseña para ingresar.
+            </span>
+          </div>
+
+          <v-text-field
+            v-model="codigoDesactivacion"
+            label="Código de Google Authenticator"
+            placeholder="000000"
+            maxlength="6"
+            inputmode="numeric"
+            variant="outlined"
+            density="comfortable"
+            rounded="lg"
+            prepend-inner-icon="mdi-shield-key-outline"
+            hide-details
+            class="profile-field mt-4"
+            @keydown.enter="desactivarMFA"
+          />
+        </v-card-text>
+
+        <v-divider />
+
+        <v-card-actions class="dialog-actions">
+          <v-btn variant="text" rounded="lg" @click="cerrarModalDesactivar"> Cancelar </v-btn>
+
+          <v-spacer />
+
+          <v-btn
+            color="error"
+            variant="tonal"
+            rounded="lg"
+            prepend-icon="mdi-shield-off-outline"
+            :loading="guardandoMFA"
+            :disabled="codigoDesactivacion.length !== 6"
+            @click="desactivarMFA"
+          >
+            Desactivar MFA
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar
       v-model="snackbar.visible"
@@ -443,8 +859,19 @@ const guardandoPassword = ref(false)
 const subiendoAvatar = ref(false)
 
 const avatarUrl = ref<string | null>(null)
-
 const fileInput = ref<HTMLInputElement | null>(null)
+
+const mfaActivo = ref(false)
+const modalActivarMFA = ref(false)
+const modalDesactivarMFA = ref(false)
+
+const qrCode = ref('')
+const mfaSecret = ref('')
+
+const codigoActivacion = ref('')
+const codigoDesactivacion = ref('')
+
+const guardandoMFA = ref(false)
 
 const snackbar = reactive({
   visible: false,
@@ -720,6 +1147,7 @@ const guardarPerfil = async () => {
   try {
     const { data } = await api.patch('/usuarios/perfil', {
       nombre: perfil.nombre.trim(),
+
       email: perfil.email.trim(),
     })
 
@@ -757,6 +1185,7 @@ const cambiarPassword = async () => {
   try {
     const { data } = await api.patch('/usuarios/cambiar-password', {
       password_actual: passwords.actual,
+
       password_nuevo: passwords.nuevo,
     })
 
@@ -782,6 +1211,120 @@ const cambiarPassword = async () => {
   }
 }
 
+const iniciarActivacionMFA = async () => {
+  if (guardandoMFA.value) {
+    return
+  }
+
+  guardandoMFA.value = true
+
+  try {
+    const { data } = await api.post('/auth/mfa/generar')
+
+    if (data.ok) {
+      qrCode.value = data.data.qr
+
+      mfaSecret.value = data.data.secret
+
+      codigoActivacion.value = ''
+
+      modalActivarMFA.value = true
+    } else {
+      mostrarSnackbar(data.mensaje ?? 'No fue posible generar el MFA', 'error')
+    }
+  } catch (error) {
+    console.error('Error generando MFA:', error)
+
+    mostrarSnackbar('Error generando MFA', 'error')
+  } finally {
+    guardandoMFA.value = false
+  }
+}
+
+const activarMFA = async () => {
+  if (guardandoMFA.value || codigoActivacion.value.length !== 6) {
+    return
+  }
+
+  guardandoMFA.value = true
+
+  try {
+    const { data } = await api.post('/auth/mfa/verificar', {
+      codigo: codigoActivacion.value,
+    })
+
+    if (data.ok) {
+      mfaActivo.value = true
+      modalActivarMFA.value = false
+      codigoActivacion.value = ''
+
+      mostrarSnackbar('MFA activado correctamente')
+    } else {
+      mostrarSnackbar(data.mensaje ?? 'Código incorrecto', 'error')
+    }
+  } catch (error) {
+    console.error('Error activando MFA:', error)
+
+    mostrarSnackbar('Error activando MFA', 'error')
+  } finally {
+    guardandoMFA.value = false
+  }
+}
+
+const desactivarMFA = async () => {
+  if (guardandoMFA.value || codigoDesactivacion.value.length !== 6) {
+    return
+  }
+
+  guardandoMFA.value = true
+
+  try {
+    const { data } = await api.post('/auth/mfa/desactivar', {
+      codigo: codigoDesactivacion.value,
+    })
+
+    if (data.ok) {
+      mfaActivo.value = false
+      modalDesactivarMFA.value = false
+      codigoDesactivacion.value = ''
+
+      mostrarSnackbar('MFA desactivado correctamente')
+    } else {
+      mostrarSnackbar(data.mensaje ?? 'Código incorrecto', 'error')
+    }
+  } catch (error) {
+    console.error('Error desactivando MFA:', error)
+
+    mostrarSnackbar('Error desactivando MFA', 'error')
+  } finally {
+    guardandoMFA.value = false
+  }
+}
+
+const cerrarModalActivar = () => {
+  modalActivarMFA.value = false
+  codigoActivacion.value = ''
+}
+
+const cerrarModalDesactivar = () => {
+  modalDesactivarMFA.value = false
+  codigoDesactivacion.value = ''
+}
+
+const copiarSecret = async () => {
+  if (!mfaSecret.value) {
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(mfaSecret.value)
+
+    mostrarSnackbar('Código copiado')
+  } catch {
+    mostrarSnackbar('No fue posible copiar el código', 'error')
+  }
+}
+
 const cargarPerfil = async () => {
   await authStore.cargarUsuario()
 
@@ -796,11 +1339,13 @@ const cargarPerfil = async () => {
   try {
     const { data } = await api.get('/auth/me')
 
-    if (data.ok && data.data.avatar_url) {
-      avatarUrl.value = data.data.avatar_url
+    if (data.ok) {
+      avatarUrl.value = data.data.avatar_url ?? null
+
+      mfaActivo.value = data.data.mfa_activo ?? false
     }
   } catch (error) {
-    console.error('Error cargando avatar:', error)
+    console.error('Error cargando perfil:', error)
   }
 }
 
@@ -817,7 +1362,7 @@ onMounted(async () => {
 
 <style scoped>
 .profile-page {
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 
@@ -864,14 +1409,23 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.identity-card {
+.profile-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.identity-card,
+.profile-card,
+.mfa-card,
+.security-summary-card {
   overflow: hidden;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .profile-banner {
   position: relative;
-  height: 112px;
+  height: 106px;
   overflow: hidden;
   background: linear-gradient(
     135deg,
@@ -903,7 +1457,7 @@ onMounted(async () => {
 .avatar-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: -55px;
+  margin-top: -53px;
 }
 
 .avatar-container {
@@ -974,7 +1528,7 @@ onMounted(async () => {
 
 .role-chip {
   margin-top: 7px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -993,6 +1547,69 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.78rem;
+}
+
+.account-overview {
+  display: grid;
+  grid-template-columns:
+    1fr
+    1px
+    1fr;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+.account-overview__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.account-overview__icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+}
+
+.account-overview__icon--success {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.account-overview__icon--warning {
+  color: rgb(var(--v-theme-warning));
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.account-overview__item > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-overview__item span {
+  font-size: 0.7rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.account-overview__item strong {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.account-overview__divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(var(--v-theme-on-surface), 0.09);
 }
 
 .avatar-help {
@@ -1031,11 +1648,102 @@ onMounted(async () => {
   color: rgba(var(--v-theme-on-surface), 0.52);
 }
 
+.mfa-card {
+  padding: 16px;
+}
+
+.mfa-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mfa-card__icon {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: rgb(var(--v-theme-warning));
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.mfa-card__icon--active {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.mfa-card__title {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.mfa-card__title strong {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.mfa-card__title span {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.mfa-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-warning));
+}
+
+.mfa-status-dot--active {
+  background: rgb(var(--v-theme-success));
+  box-shadow: 0 0 0 4px rgba(var(--v-theme-success), 0.08);
+}
+
+.mfa-active-state,
+.mfa-inactive-state {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(var(--v-border-color), 0.45);
+}
+
+.mfa-active-state__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.mfa-active-state__main > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.mfa-active-state strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.mfa-active-state span,
+.mfa-inactive-state p {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: rgba(var(--v-theme-on-surface), 0.54);
+}
+
+.mfa-inactive-state p {
+  margin-bottom: 12px;
+}
+
 .profile-card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .card-header {
@@ -1071,13 +1779,15 @@ onMounted(async () => {
   background: rgba(var(--v-theme-success), 0.08);
 }
 
-.card-header h2 {
+.card-header h2,
+.security-summary__header h2 {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
 }
 
-.card-header p {
+.card-header p,
+.security-summary__header p {
   margin: 3px 0 0;
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
@@ -1085,14 +1795,11 @@ onMounted(async () => {
 
 .card-content {
   flex: 1;
-  padding: 20px !important;
+  padding: 18px !important;
 }
 
 .form-section-title {
-  margin-bottom: 14px;
-}
-
-.form-section-title span {
+  margin-bottom: 13px;
   font-size: 0.8rem;
   font-weight: 650;
   color: rgba(var(--v-theme-on-surface), 0.68);
@@ -1106,20 +1813,27 @@ onMounted(async () => {
   font-size: 0.8rem;
 }
 
-.account-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 19px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(var(--v-theme-primary), 0.045);
+.account-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 18px;
 }
 
-.account-info__icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+.account-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 11px;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+.account-detail__icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1128,21 +1842,33 @@ onMounted(async () => {
   background: rgba(var(--v-theme-primary), 0.08);
 }
 
-.account-info > div:nth-child(2) {
+.account-detail__icon--success {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.account-detail__icon--warning {
+  color: rgb(var(--v-theme-warning));
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.account-detail > div:last-child {
   min-width: 0;
-  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.account-info span {
-  font-size: 0.7rem;
+.account-detail span {
+  font-size: 0.68rem;
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
-.account-info strong {
+.account-detail strong {
   margin-top: 2px;
-  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.77rem;
   font-weight: 650;
 }
 
@@ -1150,9 +1876,9 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
-  padding: 11px 12px;
-  border-radius: 12px;
+  margin-bottom: 15px;
+  padding: 10px 11px;
+  border-radius: 11px;
   background: rgba(var(--v-theme-success), 0.055);
 }
 
@@ -1198,7 +1924,7 @@ onMounted(async () => {
 
 .password-strength__header span,
 .password-strength__header strong {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
 }
 
 .password-strength__header strong {
@@ -1206,11 +1932,11 @@ onMounted(async () => {
 }
 
 .password-requirements {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 5px;
-  margin-top: 13px;
-  padding: 10px 12px;
+  margin-top: 12px;
+  padding: 10px 11px;
   border-radius: 11px;
   background: rgba(var(--v-theme-on-surface), 0.025);
 }
@@ -1219,11 +1945,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: rgba(var(--v-theme-on-surface), 0.47);
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .password-requirements span {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
 }
 
 .password-requirement--valid {
@@ -1231,8 +1957,273 @@ onMounted(async () => {
 }
 
 .card-actions {
-  min-height: 64px;
-  padding: 10px 18px !important;
+  min-height: 62px;
+  padding: 9px 18px !important;
+}
+
+.security-summary-card {
+  background: linear-gradient(
+    120deg,
+    rgba(var(--v-theme-primary), 0.025),
+    rgb(var(--v-theme-surface)) 45%
+  );
+}
+
+.security-summary__header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.security-summary__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.security-summary__icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.security-summary__content {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 15px;
+}
+
+.security-status-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border-radius: 11px;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+.security-status-item__icon {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.security-status-item__icon--success {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.security-status-item__icon--warning {
+  color: rgb(var(--v-theme-warning));
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.security-status-item > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.security-status-item span {
+  font-size: 0.7rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.security-status-item strong {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 17px 18px;
+}
+
+.dialog-header__icon {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.dialog-header__icon--success {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dialog-header p {
+  margin: 3px 0 0;
+  font-size: 0.73rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.dialog-content {
+  padding: 20px !important;
+}
+
+.qr-section,
+.verification-section {
+  text-align: center;
+}
+
+.qr-step {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.qr-section h3,
+.verification-section h3 {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.qr-section p,
+.verification-section p {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.54);
+}
+
+.qr-wrapper {
+  width: 216px;
+  height: 216px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px auto;
+  padding: 8px;
+  border: 1px solid rgba(var(--v-border-color), 0.55);
+  border-radius: 14px;
+  background: white;
+}
+
+.qr-wrapper img {
+  width: 200px;
+  height: 200px;
+}
+
+.secret-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  text-align: left;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.secret-code > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.secret-code span {
+  font-size: 0.68rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.secret-code strong {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  font-size: 0.76rem;
+}
+
+.verification-input {
+  max-width: 260px;
+  margin: 12px auto 0;
+}
+
+.verification-input :deep(input) {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+}
+
+.dialog-actions {
+  padding: 12px 18px !important;
+}
+
+.disable-mfa-header {
+  padding: 22px 22px 17px;
+  text-align: center;
+}
+
+.disable-mfa-header__icon {
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: rgba(var(--v-theme-error), 0.08);
+}
+
+.disable-mfa-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.disable-mfa-header p {
+  margin: 5px 0 0;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.52);
+}
+
+.danger-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-warning), 0.065);
+}
+
+.danger-notice span {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: rgba(var(--v-theme-on-surface), 0.58);
 }
 
 .snackbar-content {
@@ -1241,25 +2232,26 @@ onMounted(async () => {
   gap: 8px;
 }
 
-@media (max-width: 1279px) {
-  .identity-card {
+@media (min-width: 1280px) {
+  .profile-sidebar {
     position: sticky;
     top: 82px;
   }
 }
 
+@media (max-width: 1100px) {
+  .security-summary__content {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 959px) {
-  .identity-card {
+  .profile-sidebar {
     position: static;
   }
 
-  .profile-banner {
-    height: 100px;
-  }
-
-  .identity-content {
-    max-width: 500px;
-    margin: 0 auto;
+  .mfa-card {
+    margin-bottom: 3px;
   }
 }
 
@@ -1286,16 +2278,26 @@ onMounted(async () => {
     font-size: 0.78rem;
   }
 
-  .card-header {
+  .card-header,
+  .security-summary__header {
     padding: 14px;
   }
 
-  .card-header p {
-    font-size: 0.7rem;
+  .card-header p,
+  .security-summary__header p {
+    font-size: 0.72rem;
   }
 
   .card-content {
-    padding: 16px !important;
+    padding: 15px !important;
+  }
+
+  .account-details {
+    grid-template-columns: 1fr;
+  }
+
+  .security-summary__header {
+    align-items: flex-start;
   }
 }
 
@@ -1326,17 +2328,47 @@ onMounted(async () => {
     height: 27px;
   }
 
-  .card-header p {
+  .card-header p,
+  .security-summary__header p {
     display: none;
+  }
+
+  .security-summary__header {
+    align-items: center;
+  }
+
+  .security-summary__header > .v-chip {
+    display: none;
+  }
+
+  .account-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .account-overview__divider {
+    width: 100%;
+    height: 1px;
   }
 
   .card-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+      1fr
+      1fr;
   }
 
   .card-actions .v-spacer {
     display: none;
+  }
+
+  .qr-wrapper {
+    width: 196px;
+    height: 196px;
+  }
+
+  .qr-wrapper img {
+    width: 180px;
+    height: 180px;
   }
 }
 </style>

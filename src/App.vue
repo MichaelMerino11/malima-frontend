@@ -370,6 +370,18 @@
           @click="cerrarDrawerMobile"
         />
       </v-list>
+      <template #append>
+        <v-divider />
+        <v-list nav class="pa-2">
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="Cerrar sesión"
+            rounded="lg"
+            class="logout-item"
+            @click="confirmarLogout = true"
+          />
+        </v-list>
+      </template>
     </v-navigation-drawer>
 
     <v-navigation-drawer
