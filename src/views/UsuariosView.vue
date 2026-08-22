@@ -16,7 +16,7 @@
             </v-chip>
           </div>
 
-          <p class="page-subtitle">Administra los usuarios, roles y accesos al sistema</p>
+          <p class="page-subtitle">Administra las cuentas y permisos de acceso al sistema</p>
         </div>
       </div>
 
@@ -130,6 +130,7 @@
             variant="text"
             color="primary"
             size="small"
+            rounded="lg"
             prepend-icon="mdi-filter-remove-outline"
             @click="limpiarFiltros"
           >
@@ -230,13 +231,13 @@
           <template #item.acciones="{ item }">
             <div class="actions-cell">
               <v-menu location="bottom end" offset="6">
-                <template #activator="{ props }">
-                  <v-btn v-bind="props" icon size="small" variant="text" class="actions-btn">
+                <template #activator="{ props: menuProps }">
+                  <v-btn v-bind="menuProps" icon size="small" variant="text" class="actions-btn">
                     <v-icon size="19"> mdi-dots-vertical </v-icon>
                   </v-btn>
                 </template>
 
-                <v-card min-width="190" rounded="lg" elevation="8" class="actions-menu">
+                <v-card min-width="200" rounded="lg" elevation="8" class="actions-menu">
                   <v-list density="comfortable" class="pa-1">
                     <v-list-item
                       prepend-icon="mdi-pencil-outline"
@@ -279,6 +280,8 @@
           </div>
 
           <div class="dialog-header__content">
+            <span class="dialog-eyebrow"> Gestión de acceso </span>
+
             <h2>
               {{ dialog.modo === 'crear' ? 'Nuevo usuario' : 'Editar usuario' }}
             </h2>
@@ -292,7 +295,7 @@
             </p>
           </div>
 
-          <v-btn icon size="small" variant="text" @click="dialog.visible = false">
+          <v-btn icon size="small" variant="text" :disabled="guardando" @click="cerrarDialogo">
             <v-icon size="19"> mdi-close </v-icon>
           </v-btn>
         </div>
@@ -302,9 +305,15 @@
         <v-card-text class="dialog-content">
           <div class="form-section">
             <div class="form-section__title">
-              <v-icon size="18" color="primary"> mdi-account-outline </v-icon>
+              <div class="form-section__icon">
+                <v-icon size="18"> mdi-account-outline </v-icon>
+              </div>
 
-              <span> Información personal </span>
+              <div>
+                <strong> Información personal </strong>
+
+                <span> Datos principales de la cuenta </span>
+              </div>
             </div>
 
             <v-text-field
@@ -317,6 +326,7 @@
               rounded="lg"
               hide-details="auto"
               class="mb-4 form-field"
+              :disabled="guardando"
             />
 
             <v-text-field
@@ -330,6 +340,7 @@
               rounded="lg"
               hide-details="auto"
               class="form-field"
+              :disabled="guardando"
             />
           </div>
 
@@ -337,9 +348,15 @@
 
           <div class="form-section">
             <div class="form-section__title">
-              <v-icon size="18" color="primary"> mdi-shield-account-outline </v-icon>
+              <div class="form-section__icon">
+                <v-icon size="18"> mdi-shield-account-outline </v-icon>
+              </div>
 
-              <span> Acceso y permisos </span>
+              <div>
+                <strong> Acceso y permisos </strong>
+
+                <span> Define el nivel de acceso del usuario </span>
+              </div>
             </div>
 
             <v-select
@@ -354,26 +371,52 @@
               rounded="lg"
               hide-details="auto"
               class="mb-4 form-field"
+              :disabled="guardando"
             >
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props">
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps" rounded="lg">
                   <template #prepend>
                     <div
                       class="role-option-icon"
-                      :class="`role-option-icon--${colorRol(item.value)}`"
+                      :class="`role-option-icon--${colorRolUi(String(item.value))}`"
                     >
                       <v-icon size="17">
-                        {{ iconoRol(item.value) }}
+                        {{ iconoRolUi(String(item.value)) }}
                       </v-icon>
                     </div>
                   </template>
 
                   <template #subtitle>
-                    {{ descripcionRol(item.value) }}
+                    {{ descripcionRolUi(String(item.value)) }}
                   </template>
                 </v-list-item>
               </template>
             </v-select>
+
+            <div
+              class="role-help"
+              :class="form.rol === 'admin' ? 'role-help--admin' : 'role-help--user'"
+            >
+              <div class="role-help__icon">
+                <v-icon size="19">
+                  {{ form.rol === 'admin' ? 'mdi-shield-crown-outline' : 'mdi-account-outline' }}
+                </v-icon>
+              </div>
+
+              <div>
+                <strong>
+                  {{ form.rol === 'admin' ? 'Administrador' : 'Usuario' }}
+                </strong>
+
+                <span>
+                  {{
+                    form.rol === 'admin'
+                      ? 'Cuenta con permisos completos de administración.'
+                      : 'Cuenta destinada a la operación y monitoreo habitual de las naves.'
+                  }}
+                </span>
+              </div>
+            </div>
 
             <v-text-field
               v-if="dialog.modo === 'crear'"
@@ -386,7 +429,8 @@
               density="comfortable"
               rounded="lg"
               hide-details="auto"
-              class="form-field"
+              class="mt-4 form-field"
+              :disabled="guardando"
               @click:append-inner="mostrarPassword = !mostrarPassword"
               @keydown.enter="guardar"
             />
@@ -394,7 +438,7 @@
             <div v-if="dialog.modo === 'crear'" class="password-info">
               <v-icon size="17"> mdi-information-outline </v-icon>
 
-              <span> Define una contraseña segura para la nueva cuenta. </span>
+              <span> La contraseña debe tener al menos 6 caracteres. </span>
             </div>
           </div>
         </v-card-text>
@@ -402,7 +446,9 @@
         <v-divider />
 
         <v-card-actions class="dialog-actions">
-          <v-btn variant="text" rounded="lg" @click="dialog.visible = false"> Cancelar </v-btn>
+          <v-btn variant="text" rounded="lg" :disabled="guardando" @click="cerrarDialogo">
+            Cancelar
+          </v-btn>
 
           <v-btn
             color="primary"
@@ -421,7 +467,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="dialogDesactivar.visible" max-width="410">
+    <v-dialog v-model="dialogDesactivar.visible" max-width="420" persistent>
       <v-card rounded="xl" elevation="12" class="deactivate-dialog">
         <div class="deactivate-dialog__icon">
           <v-icon size="34" color="error"> mdi-account-off-outline </v-icon>
@@ -431,15 +477,19 @@
 
         <v-card-text class="deactivate-dialog__text">
           ¿Estás seguro de que deseas desactivar a
+
           <strong>
             {{ dialogDesactivar.usuario?.nombre }} </strong
           >?
 
-          <span> El usuario dejará de tener acceso al sistema. </span>
+          <span>
+            El usuario dejará de tener acceso al sistema, pero su información permanecerá
+            registrada.
+          </span>
         </v-card-text>
 
         <v-card-actions class="deactivate-dialog__actions">
-          <v-btn variant="text" rounded="lg" @click="dialogDesactivar.visible = false">
+          <v-btn variant="text" rounded="lg" :disabled="desactivando" @click="cerrarDesactivacion">
             Cancelar
           </v-btn>
 
@@ -487,6 +537,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import api from '../api/axios'
+
 import { useLoadingStore } from '../stores/loading'
 
 const loadingStore = useLoadingStore()
@@ -499,62 +550,82 @@ interface Usuario {
   activo: boolean
 }
 
+type RolUi = 'admin' | 'usuario'
+
 const usuarios = ref<Usuario[]>([])
+
 const cargando = ref(false)
+
 const guardando = ref(false)
+
 const desactivando = ref(false)
+
 const mostrarPassword = ref(false)
 
 const busqueda = ref('')
-const filtroRol = ref<string | null>(null)
+
+const filtroRol = ref<RolUi | null>(null)
+
 const filtroEstado = ref<boolean | null>(null)
+
+const rolBackendOriginal = ref<string | null>(null)
 
 const snackbar = reactive({
   visible: false,
+
   mensaje: '',
+
   color: 'success',
 })
 
 const dialog = reactive({
   visible: false,
+
   modo: 'crear' as 'crear' | 'editar',
+
   id: null as number | null,
 })
 
 const dialogDesactivar = reactive({
   visible: false,
+
   usuario: null as Usuario | null,
 })
 
 const form = reactive({
   nombre: '',
+
   email: '',
-  rol: 'operador',
+
+  rol: 'usuario' as RolUi,
+
   password: '',
 })
 
 const rolesItems = [
   {
     title: 'Administrador',
+
     value: 'admin',
   },
+
   {
-    title: 'Operador',
-    value: 'operador',
-  },
-  {
-    title: 'Supervisor',
-    value: 'supervisor',
+    title: 'Usuario',
+
+    value: 'usuario',
   },
 ]
 
 const estadoItems = [
   {
     title: 'Activos',
+
     value: true,
   },
+
   {
     title: 'Inactivos',
+
     value: false,
   },
 ]
@@ -562,32 +633,86 @@ const estadoItems = [
 const headers = [
   {
     title: 'Usuario',
+
     key: 'nombre',
+
     minWidth: '190px',
   },
+
   {
     title: 'Correo electrónico',
+
     key: 'email',
+
     minWidth: '220px',
   },
+
   {
     title: 'Rol',
+
     key: 'rol',
+
     minWidth: '140px',
   },
+
   {
     title: 'Estado',
+
     key: 'activo',
+
     minWidth: '120px',
   },
+
   {
     title: '',
+
     key: 'acciones',
+
     sortable: false,
+
     align: 'end' as const,
+
     width: '70px',
   },
 ]
+
+const rolUiDesdeBackend = (rol: string | null | undefined): RolUi => {
+  return rol === 'admin' ? 'admin' : 'usuario'
+}
+
+const rolBackendParaGuardar = (): string => {
+  /*
+   * La interfaz únicamente trabaja
+   * con Administrador y Usuario.
+   *
+   * Por compatibilidad, el backend
+   * todavía puede seguir usando:
+   *
+   * admin
+   * operador
+   * supervisor
+   */
+
+  if (form.rol === 'admin') {
+    return 'admin'
+  }
+
+  /*
+   * Si estamos editando un usuario
+   * existente que era supervisor,
+   * conservamos ese valor mientras
+   * visualmente se muestra Usuario.
+   *
+   * Esto evita cambiar permisos
+   * accidentalmente al modificar
+   * únicamente nombre o correo.
+   */
+  if (dialog.modo === 'editar' && rolBackendOriginal.value === 'supervisor') {
+    return 'supervisor'
+  }
+
+  return 'operador'
+}
 
 const usuariosFiltrados = computed(() => {
   let resultado = [...usuarios.value]
@@ -595,15 +720,16 @@ const usuariosFiltrados = computed(() => {
   const termino = busqueda.value.trim().toLowerCase()
 
   if (termino) {
-    resultado = resultado.filter(
-      (usuario) =>
+    resultado = resultado.filter((usuario) => {
+      return (
         usuario.nombre?.toLowerCase().includes(termino) ||
-        usuario.email?.toLowerCase().includes(termino),
-    )
+        usuario.email?.toLowerCase().includes(termino)
+      )
+    })
   }
 
   if (filtroRol.value) {
-    resultado = resultado.filter((usuario) => usuario.rol === filtroRol.value)
+    resultado = resultado.filter((usuario) => rolUiDesdeBackend(usuario.rol) === filtroRol.value)
   }
 
   if (filtroEstado.value !== null) {
@@ -613,38 +739,57 @@ const usuariosFiltrados = computed(() => {
   return resultado
 })
 
-const totalActivos = computed(() => usuarios.value.filter((usuario) => usuario.activo).length)
+const totalActivos = computed(() => {
+  return usuarios.value.filter((usuario) => usuario.activo).length
+})
 
-const totalInactivos = computed(() => usuarios.value.filter((usuario) => !usuario.activo).length)
+const totalAdministradores = computed(() => {
+  return usuarios.value.filter((usuario) => usuario.rol === 'admin').length
+})
 
-const totalAdministradores = computed(
-  () => usuarios.value.filter((usuario) => usuario.rol === 'admin').length,
-)
+const totalUsuarios = computed(() => {
+  return usuarios.value.filter((usuario) => usuario.rol !== 'admin').length
+})
 
 const indicadores = computed(() => [
   {
     label: 'Total usuarios',
+
     value: usuarios.value.length,
+
     icon: 'mdi-account-group-outline',
+
     color: 'primary',
   },
+
   {
     label: 'Usuarios activos',
+
     value: totalActivos.value,
+
     icon: 'mdi-account-check-outline',
+
     color: 'success',
   },
-  {
-    label: 'Usuarios inactivos',
-    value: totalInactivos.value,
-    icon: 'mdi-account-off-outline',
-    color: 'error',
-  },
+
   {
     label: 'Administradores',
+
     value: totalAdministradores.value,
-    icon: 'mdi-shield-account-outline',
+
+    icon: 'mdi-shield-crown-outline',
+
     color: 'warning',
+  },
+
+  {
+    label: 'Usuarios',
+
+    value: totalUsuarios.value,
+
+    icon: 'mdi-account-outline',
+
+    color: 'info',
   },
 ])
 
@@ -657,7 +802,7 @@ const formularioValido = computed(() => {
 
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
 
-  const rolValido = Boolean(form.rol)
+  const rolValido = form.rol === 'admin' || form.rol === 'usuario'
 
   if (dialog.modo === 'crear') {
     return nombreValido && emailValido && rolValido && form.password.length >= 6
@@ -668,7 +813,9 @@ const formularioValido = computed(() => {
 
 const mostrarSnackbar = (mensaje: string, color = 'success') => {
   snackbar.mensaje = mensaje
+
   snackbar.color = color
+
   snackbar.visible = true
 }
 
@@ -687,64 +834,38 @@ const obtenerIniciales = (nombre: string) => {
 }
 
 const colorRol = (rol: string) => {
-  if (rol === 'admin') {
-    return 'primary'
-  }
-
-  if (rol === 'operador') {
-    return 'success'
-  }
-
-  return 'warning'
+  return rol === 'admin' ? 'primary' : 'success'
 }
 
 const iconoRol = (rol: string) => {
-  if (rol === 'admin') {
-    return 'mdi-shield-crown-outline'
-  }
-
-  if (rol === 'operador') {
-    return 'mdi-account-cog-outline'
-  }
-
-  return 'mdi-account-eye-outline'
+  return rol === 'admin' ? 'mdi-shield-crown-outline' : 'mdi-account-outline'
 }
 
 const labelRol = (rol: string) => {
-  if (rol === 'admin') {
-    return 'Administrador'
-  }
-
-  if (rol === 'operador') {
-    return 'Operador'
-  }
-
-  if (rol === 'supervisor') {
-    return 'Supervisor'
-  }
-
-  return rol
+  return rol === 'admin' ? 'Administrador' : 'Usuario'
 }
 
-const descripcionRol = (rol: string) => {
+const colorRolUi = (rol: string) => {
+  return rol === 'admin' ? 'primary' : 'success'
+}
+
+const iconoRolUi = (rol: string) => {
+  return rol === 'admin' ? 'mdi-shield-crown-outline' : 'mdi-account-outline'
+}
+
+const descripcionRolUi = (rol: string) => {
   if (rol === 'admin') {
     return 'Acceso completo al sistema'
   }
 
-  if (rol === 'operador') {
-    return 'Operación habitual de galpones'
-  }
-
-  if (rol === 'supervisor') {
-    return 'Supervisión y monitoreo'
-  }
-
-  return ''
+  return 'Operación y monitoreo habitual de las naves'
 }
 
 const limpiarFiltros = () => {
   busqueda.value = ''
+
   filtroRol.value = null
+
   filtroEstado.value = null
 }
 
@@ -776,31 +897,54 @@ const cargar = async () => {
 
 const limpiarFormulario = () => {
   form.nombre = ''
+
   form.email = ''
-  form.rol = 'operador'
+
+  form.rol = 'usuario'
+
   form.password = ''
+
   mostrarPassword.value = false
+
+  rolBackendOriginal.value = null
 }
 
 const abrirCrear = () => {
   limpiarFormulario()
 
   dialog.modo = 'crear'
+
   dialog.id = null
+
   dialog.visible = true
 }
 
 const abrirEditar = (usuario: Usuario) => {
   form.nombre = usuario.nombre
+
   form.email = usuario.email
-  form.rol = usuario.rol
+
+  form.rol = rolUiDesdeBackend(usuario.rol)
+
   form.password = ''
 
   mostrarPassword.value = false
 
+  rolBackendOriginal.value = usuario.rol
+
   dialog.modo = 'editar'
+
   dialog.id = usuario.id
+
   dialog.visible = true
+}
+
+const cerrarDialogo = () => {
+  if (guardando.value) {
+    return
+  }
+
+  dialog.visible = false
 }
 
 const guardar = async () => {
@@ -811,12 +955,17 @@ const guardar = async () => {
   guardando.value = true
 
   try {
+    const rolBackend = rolBackendParaGuardar()
+
     if (dialog.modo === 'crear') {
       const { data } = await api.post('/auth/register', {
         nombre: form.nombre.trim(),
-        email: form.email.trim(),
+
+        email: form.email.trim().toLowerCase(),
+
         password: form.password,
-        rol: form.rol,
+
+        rol: rolBackend,
       })
 
       if (data.ok) {
@@ -828,22 +977,26 @@ const guardar = async () => {
       } else {
         mostrarSnackbar(data.mensaje ?? 'No fue posible crear el usuario', 'error')
       }
+
+      return
+    }
+
+    const { data } = await api.patch(`/usuarios/${dialog.id}`, {
+      nombre: form.nombre.trim(),
+
+      email: form.email.trim().toLowerCase(),
+
+      rol: rolBackend,
+    })
+
+    if (data.ok) {
+      mostrarSnackbar('Usuario actualizado correctamente')
+
+      dialog.visible = false
+
+      await cargar()
     } else {
-      const { data } = await api.patch(`/usuarios/${dialog.id}`, {
-        nombre: form.nombre.trim(),
-        email: form.email.trim(),
-        rol: form.rol,
-      })
-
-      if (data.ok) {
-        mostrarSnackbar('Usuario actualizado correctamente')
-
-        dialog.visible = false
-
-        await cargar()
-      } else {
-        mostrarSnackbar(data.mensaje ?? 'No fue posible actualizar el usuario', 'error')
-      }
+      mostrarSnackbar(data.mensaje ?? 'No fue posible actualizar el usuario', 'error')
     }
   } catch (error) {
     console.error('Error guardando usuario:', error)
@@ -858,6 +1011,16 @@ const confirmarDesactivacion = (usuario: Usuario) => {
   dialogDesactivar.usuario = usuario
 
   dialogDesactivar.visible = true
+}
+
+const cerrarDesactivacion = () => {
+  if (desactivando.value) {
+    return
+  }
+
+  dialogDesactivar.visible = false
+
+  dialogDesactivar.usuario = null
 }
 
 const desactivarConfirmado = async () => {
@@ -913,38 +1076,49 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 24px;
 }
 
 .page-header__main {
   display: flex;
   align-items: center;
+
   gap: 13px;
 }
 
 .page-header__icon {
   width: 46px;
   height: 46px;
+
   flex: 0 0 46px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 14px;
+
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .page-title {
   margin: 0;
+
   font-size: 1.4rem;
   font-weight: 750;
   line-height: 1.25;
+
   letter-spacing: -0.02em;
 }
 
 .page-subtitle {
   margin: 4px 0 0;
+
   font-size: 0.875rem;
+
   color: rgba(var(--v-theme-on-surface), 0.58);
 }
 
@@ -955,18 +1129,26 @@ onMounted(async () => {
 .page-header__actions {
   display: flex;
   align-items: center;
+
   gap: 8px;
 }
 
 .summary-card {
   position: relative;
+
   min-height: 94px;
+
   display: flex;
   align-items: center;
+
   gap: 12px;
+
   padding: 15px;
+
   overflow: hidden;
+
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -974,41 +1156,56 @@ onMounted(async () => {
 
 .summary-card:hover {
   transform: translateY(-2px);
+
   box-shadow: 0 7px 24px rgba(0, 0, 0, 0.05) !important;
 }
 
 .summary-card__icon {
   width: 42px;
   height: 42px;
+
   flex: 0 0 42px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 12px;
 }
 
 .summary-card__icon--primary {
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .summary-card__icon--success {
   color: rgb(var(--v-theme-success));
+
   background: rgba(var(--v-theme-success), 0.09);
 }
 
 .summary-card__icon--error {
   color: rgb(var(--v-theme-error));
+
   background: rgba(var(--v-theme-error), 0.09);
 }
 
 .summary-card__icon--warning {
   color: rgb(var(--v-theme-warning));
+
   background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.summary-card__icon--info {
+  color: rgb(var(--v-theme-info));
+
+  background: rgba(var(--v-theme-info), 0.09);
 }
 
 .summary-card__content {
   min-width: 0;
+
   display: flex;
   flex-direction: column;
 }
@@ -1021,16 +1218,21 @@ onMounted(async () => {
 
 .summary-card__content span {
   margin-top: 4px;
+
   font-size: 0.78rem;
+
   color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .summary-card__accent {
   position: absolute;
+
   top: 21px;
   right: 0;
   bottom: 21px;
+
   width: 3px;
+
   border-radius: 4px 0 0 4px;
 }
 
@@ -1050,54 +1252,73 @@ onMounted(async () => {
   background: rgb(var(--v-theme-warning));
 }
 
+.summary-card__accent--info {
+  background: rgb(var(--v-theme-info));
+}
+
 .users-card {
   overflow: hidden;
+
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .users-toolbar {
   min-height: 86px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 20px;
+
   padding: 16px 18px;
 }
 
 .users-toolbar__title {
   flex-shrink: 0;
+
   display: flex;
   align-items: center;
+
   gap: 10px;
 }
 
 .section-icon {
   width: 38px;
   height: 38px;
+
   flex: 0 0 38px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 11px;
+
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.08);
 }
 
 .users-toolbar h2 {
   margin: 0;
+
   font-size: 0.95rem;
   font-weight: 700;
 }
 
 .users-toolbar p {
   margin: 3px 0 0;
+
   font-size: 0.75rem;
+
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .users-toolbar__filters {
   display: flex;
   align-items: center;
+
   gap: 8px;
 }
 
@@ -1111,16 +1332,21 @@ onMounted(async () => {
 
 .search-field :deep(.v-field__input),
 .filter-field :deep(.v-field__input) {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .search-field :deep(.v-field-label),
 .filter-field :deep(.v-field-label) {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+}
+
+.filter-field :deep(.v-select__selection-text) {
+  font-size: 0.84rem;
 }
 
 .table-wrapper {
   width: 100%;
+
   overflow-x: auto;
 }
 
@@ -1130,15 +1356,20 @@ onMounted(async () => {
 
 .users-table :deep(th) {
   height: 48px !important;
+
   font-size: 0.75rem !important;
   font-weight: 700 !important;
+
   color: rgba(var(--v-theme-on-surface), 0.65) !important;
+
   background: rgba(var(--v-theme-on-surface), 0.018);
 }
 
 .users-table :deep(td) {
   min-height: 64px;
+
   font-size: 0.78rem;
+
   border-bottom-color: rgba(var(--v-border-color), 0.4) !important;
 }
 
@@ -1153,12 +1384,15 @@ onMounted(async () => {
 .user-identity {
   display: flex;
   align-items: center;
+
   gap: 10px;
 }
 
 .user-avatar {
   flex-shrink: 0;
+
   background: rgba(var(--v-theme-primary), 0.1) !important;
+
   color: rgb(var(--v-theme-primary));
 }
 
@@ -1169,28 +1403,34 @@ onMounted(async () => {
 
 .user-identity__text {
   min-width: 0;
+
   display: flex;
   flex-direction: column;
 }
 
 .user-identity__text strong {
   max-width: 170px;
+
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
   font-size: 0.8rem;
   font-weight: 650;
 }
 
 .user-identity__text span {
   margin-top: 2px;
-  font-size: 0.68rem;
+
+  font-size: 0.7rem;
+
   color: rgba(var(--v-theme-on-surface), 0.48);
 }
 
 .email-cell {
   display: flex;
   align-items: center;
+
   gap: 7px;
 }
 
@@ -1206,6 +1446,7 @@ onMounted(async () => {
 .status-cell {
   display: flex;
   align-items: center;
+
   gap: 7px;
 }
 
@@ -1217,16 +1458,19 @@ onMounted(async () => {
 .status-dot {
   width: 7px;
   height: 7px;
+
   border-radius: 50%;
 }
 
 .status-dot--active {
   background: rgb(var(--v-theme-success));
+
   box-shadow: 0 0 0 4px rgba(var(--v-theme-success), 0.08);
 }
 
 .status-dot--inactive {
   background: rgb(var(--v-theme-error));
+
   box-shadow: 0 0 0 4px rgba(var(--v-theme-error), 0.07);
 }
 
@@ -1241,6 +1485,7 @@ onMounted(async () => {
 
 .actions-btn:hover {
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.07);
 }
 
@@ -1253,47 +1498,73 @@ onMounted(async () => {
 }
 
 .dialog-header {
-  min-height: 82px;
+  min-height: 88px;
+
   display: flex;
   align-items: center;
+
   gap: 12px;
+
   padding: 17px 18px;
 }
 
 .dialog-header__icon {
   width: 46px;
   height: 46px;
+
   flex: 0 0 46px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 13px;
 }
 
 .dialog-header__icon--create {
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .dialog-header__icon--edit {
   color: rgb(var(--v-theme-info));
+
   background: rgba(var(--v-theme-info), 0.09);
 }
 
 .dialog-header__content {
   min-width: 0;
+
   flex: 1;
+}
+
+.dialog-eyebrow {
+  display: block;
+
+  margin-bottom: 2px;
+
+  font-size: 0.68rem;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+
+  color: rgb(var(--v-theme-primary));
 }
 
 .dialog-header h2 {
   margin: 0;
+
   font-size: 1rem;
   font-weight: 700;
 }
 
 .dialog-header p {
   margin: 3px 0 0;
+
   font-size: 0.75rem;
+
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
@@ -1304,13 +1575,45 @@ onMounted(async () => {
 .form-section__title {
   display: flex;
   align-items: center;
-  gap: 7px;
+
+  gap: 9px;
+
   margin-bottom: 14px;
 }
 
-.form-section__title span {
+.form-section__icon {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.07);
+}
+
+.form-section__title > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section__title strong {
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.form-section__title span {
+  margin-top: 1px;
+
+  font-size: 0.7rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.48);
 }
 
 .form-field :deep(.v-field__input) {
@@ -1324,75 +1627,152 @@ onMounted(async () => {
 .role-option-icon {
   width: 32px;
   height: 32px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   border-radius: 9px;
 }
 
 .role-option-icon--primary {
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .role-option-icon--success {
   color: rgb(var(--v-theme-success));
+
   background: rgba(var(--v-theme-success), 0.09);
 }
 
-.role-option-icon--warning {
-  color: rgb(var(--v-theme-warning));
-  background: rgba(var(--v-theme-warning), 0.1);
+.role-help {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  padding: 10px 11px;
+
+  border-radius: 11px;
+}
+
+.role-help--admin {
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.055);
+}
+
+.role-help--user {
+  color: rgb(var(--v-theme-success));
+
+  background: rgba(var(--v-theme-success), 0.055);
+}
+
+.role-help__icon {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px;
+
+  background: rgba(var(--v-theme-surface), 0.7);
+}
+
+.role-help > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-help strong {
+  font-size: 0.76rem;
+  font-weight: 650;
+
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.role-help span {
+  margin-top: 2px;
+
+  font-size: 0.7rem;
+  line-height: 1.45;
+
+  color: rgba(var(--v-theme-on-surface), 0.54);
 }
 
 .password-info {
   display: flex;
   align-items: center;
+
   gap: 7px;
+
   margin-top: 9px;
+
   padding: 9px 11px;
+
   border-radius: 10px;
+
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.06);
 }
 
 .password-info span {
   font-size: 0.72rem;
+
   color: rgba(var(--v-theme-on-surface), 0.58);
 }
 
 .dialog-actions {
   justify-content: flex-end;
+
   gap: 8px;
+
   padding: 13px 18px 17px;
 }
 
 .deactivate-dialog {
   padding-top: 24px;
+
   text-align: center;
 }
 
 .deactivate-dialog__icon {
   width: 68px;
   height: 68px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   margin: 0 auto 8px;
+
   border-radius: 50%;
+
   background: rgba(var(--v-theme-error), 0.09);
 }
 
 .deactivate-dialog__title {
   justify-content: center;
+
   padding-bottom: 4px;
+
   font-size: 1rem;
   font-weight: 700;
 }
 
 .deactivate-dialog__text {
   padding-top: 4px;
+
   font-size: 0.8rem;
+  line-height: 1.5;
+
   color: rgba(var(--v-theme-on-surface), 0.62);
 }
 
@@ -1402,59 +1782,78 @@ onMounted(async () => {
 
 .deactivate-dialog__text span {
   display: block;
+
   margin-top: 7px;
+
   font-size: 0.74rem;
+
   color: rgba(var(--v-theme-on-surface), 0.48);
 }
 
 .deactivate-dialog__actions {
   justify-content: center;
+
   gap: 8px;
+
   padding: 12px 18px 20px;
 }
 
 .empty-state {
   min-height: 330px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
   padding: 40px 20px;
+
   text-align: center;
 }
 
 .empty-state__icon {
   width: 78px;
   height: 78px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   margin-bottom: 14px;
+
   border-radius: 50%;
+
   background: rgba(var(--v-theme-primary), 0.07);
 }
 
 .empty-state h3 {
   margin: 0;
-  font-size: 0.9rem;
+
+  font-size: 0.92rem;
   font-weight: 700;
 }
 
 .empty-state p {
   max-width: 400px;
+
   margin: 6px 0 18px;
-  font-size: 0.75rem;
+
+  font-size: 0.76rem;
+  line-height: 1.5;
+
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .table-loading {
   min-height: 300px;
+
   padding: 16px;
 }
 
 .snackbar-content {
   display: flex;
   align-items: center;
+
   gap: 8px;
 }
 
@@ -1482,6 +1881,7 @@ onMounted(async () => {
   .page-header {
     flex-direction: column;
     align-items: stretch;
+
     gap: 14px;
   }
 
@@ -1492,6 +1892,7 @@ onMounted(async () => {
   .page-header__icon {
     width: 42px;
     height: 42px;
+
     flex-basis: 42px;
   }
 
@@ -1513,13 +1914,16 @@ onMounted(async () => {
 
   .summary-card {
     min-height: 84px;
+
     padding: 12px;
+
     gap: 9px;
   }
 
   .summary-card__icon {
     width: 36px;
     height: 36px;
+
     flex-basis: 36px;
   }
 
@@ -1537,11 +1941,15 @@ onMounted(async () => {
 
   .users-toolbar__filters {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+      1fr
+      1fr;
   }
 
   .search-field {
     width: 100%;
+
     grid-column: 1 / -1;
   }
 
@@ -1557,7 +1965,10 @@ onMounted(async () => {
 
   .page-header__actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+      1fr
+      1fr;
   }
 
   .users-toolbar__filters {
@@ -1575,6 +1986,7 @@ onMounted(async () => {
   .dialog-header__icon {
     width: 40px;
     height: 40px;
+
     flex-basis: 40px;
   }
 
@@ -1588,7 +2000,10 @@ onMounted(async () => {
 
   .dialog-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+      1fr
+      1fr;
   }
 }
 </style>

@@ -66,7 +66,7 @@
       <v-col cols="12" sm="6" lg="3">
         <v-card rounded="xl" elevation="0" class="summary-card">
           <div class="summary-card__icon summary-card__icon--info">
-            <v-icon size="23"> mdi-developer-board </v-icon>
+            <v-icon size="23"> mdi-chip </v-icon>
           </div>
 
           <div class="summary-card__content">
@@ -74,7 +74,7 @@
               {{ tinkerConfigs.length }}
             </strong>
 
-            <span> Parámetros TinkerBoard </span>
+            <span> Parámetros del microcontrolador </span>
           </div>
 
           <span class="summary-card__accent summary-card__accent--info" />
@@ -138,13 +138,16 @@
       <div class="config-card__header">
         <div class="config-card__title">
           <div class="section-icon">
-            <v-icon size="21"> mdi-developer-board </v-icon>
+            <v-icon size="21"> mdi-chip </v-icon>
           </div>
 
           <div>
-            <h2>Conexión con TinkerBoard</h2>
+            <h2>Conexión con microcontrolador</h2>
 
-            <p>Parámetros utilizados para la comunicación y automatización del controlador</p>
+            <p>
+              Parámetros utilizados para la comunicación, control y automatización del
+              microcontrolador
+            </p>
           </div>
         </div>
 
@@ -291,7 +294,7 @@
             <div class="config-item__title">
               <div class="d-flex align-center ga-2">
                 <strong>
-                  {{ config.descripcion }}
+                  {{ descripcionConfig(config) }}
                 </strong>
 
                 <v-chip
@@ -305,7 +308,7 @@
               </div>
 
               <span>
-                {{ config.clave }}
+                {{ etiquetaClaveConfig(config.clave) }}
               </span>
             </div>
           </div>
@@ -590,6 +593,33 @@ const guardar = async (clave: string, valor: string) => {
     mostrarSnackbar('Error guardando configuración', 'error')
   } finally {
     guardando.value = null
+  }
+}
+
+const descripcionConfig = (config: Configuracion) => {
+  const descripcion = String(config.descripcion ?? '')
+
+  return descripcion
+    .replace(/tinkerboard/gi, 'microcontrolador')
+    .replace(/tinker board/gi, 'microcontrolador')
+}
+
+const etiquetaClaveConfig = (clave: string) => {
+  switch (clave) {
+    case 'tinkerboard_url':
+      return 'Dirección del microcontrolador'
+
+    case 'tinkerboard_endpoint_comando':
+      return 'Endpoint de comandos'
+
+    case 'tinkerboard_timeout':
+      return 'Tiempo máximo de respuesta'
+
+    case 'automatizacion_intervalo':
+      return 'Intervalo de automatización'
+
+    default:
+      return clave.replace(/_/g, ' ').replace(/\b\w/g, (letra) => letra.toUpperCase())
   }
 }
 

@@ -3,7 +3,7 @@
     <div class="page-header mb-6">
       <div class="page-header__content">
         <div class="page-header__icon">
-          <v-icon size="26">mdi-alarm-light-outline</v-icon>
+          <v-icon size="26"> mdi-alarm-light-outline </v-icon>
         </div>
 
         <div>
@@ -15,32 +15,43 @@
               color="error"
               variant="tonal"
               size="small"
-              class="font-weight-medium"
+              class="status-chip"
             >
-              <v-icon start size="15">mdi-alert-circle</v-icon>
-              {{ resumen.activas }} pendientes
+              <v-icon start size="15"> mdi-alert-circle </v-icon>
+
+              {{ resumen.activas }}
+              {{ resumen.activas === 1 ? 'pendiente' : 'pendientes' }}
             </v-chip>
 
-            <v-chip v-else color="success" variant="tonal" size="small" class="font-weight-medium">
-              <v-icon start size="15">mdi-check-circle</v-icon>
+            <v-chip v-else color="success" variant="tonal" size="small" class="status-chip">
+              <v-icon start size="15"> mdi-check-circle </v-icon>
+
               Todo en orden
             </v-chip>
           </div>
 
           <p class="page-subtitle">
-            Monitorea, filtra y gestiona las alertas detectadas por el sistema.
+            Monitoreo y gestión de alertas operativas de las naves, equipos y condiciones
+            ambientales.
           </p>
         </div>
       </div>
 
       <div class="page-header__actions">
+        <div v-if="ultimaActualizacion" class="last-update">
+          <v-icon size="15"> mdi-clock-outline </v-icon>
+
+          <span> Actualizado {{ ultimaActualizacion }} </span>
+        </div>
+
         <v-btn
           v-if="resumen.activas > 0"
           color="error"
           variant="tonal"
           rounded="lg"
           prepend-icon="mdi-check-all"
-          :disabled="cargando"
+          :loading="resolviendoTodas"
+          :disabled="cargando || resolviendoTodas"
           @click="resolverTodas"
         >
           Resolver todas
@@ -52,84 +63,55 @@
           rounded="lg"
           prepend-icon="mdi-refresh"
           :loading="cargando"
+          :disabled="resolviendoTodas"
           @click="cargar"
         >
           Actualizar
         </v-btn>
       </div>
     </div>
-    <v-row class="mb-6">
-      <v-col cols="12" sm="6" lg="4">
-        <v-card class="stat-card stat-card--error" rounded="xl" elevation="0">
-          <div class="stat-card__icon">
-            <v-icon size="26">mdi-alert-circle-outline</v-icon>
+
+    <v-row class="mb-5">
+      <v-col v-for="item in indicadores" :key="item.label" cols="12" sm="4">
+        <v-card rounded="xl" elevation="0" class="stat-card">
+          <div class="stat-card__icon" :class="`stat-card__icon--${item.color}`">
+            <v-icon size="25">
+              {{ item.icon }}
+            </v-icon>
           </div>
 
           <div class="stat-card__content">
-            <span class="stat-card__label">Alarmas activas</span>
+            <span class="stat-card__label">
+              {{ item.label }}
+            </span>
 
             <strong class="stat-card__value">
-              {{ resumen.activas }}
+              {{ item.value }}
             </strong>
 
-            <span class="stat-card__description"> Requieren atención </span>
+            <span class="stat-card__description">
+              {{ item.description }}
+            </span>
           </div>
 
-          <div v-if="resumen.activas > 0" class="stat-card__indicator" />
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" sm="6" lg="4">
-        <v-card class="stat-card stat-card--success" rounded="xl" elevation="0">
-          <div class="stat-card__icon">
-            <v-icon size="26">mdi-check-circle-outline</v-icon>
-          </div>
-
-          <div class="stat-card__content">
-            <span class="stat-card__label">Resueltas</span>
-
-            <strong class="stat-card__value">
-              {{ resumen.resueltas }}
-            </strong>
-
-            <span class="stat-card__description"> Incidencias atendidas </span>
-          </div>
-        </v-card>
-      </v-col>
-
-      <!-- TOTAL -->
-      <v-col cols="12" sm="6" lg="4">
-        <v-card class="stat-card stat-card--primary" rounded="xl" elevation="0">
-          <div class="stat-card__icon">
-            <v-icon size="26">mdi-bell-outline</v-icon>
-          </div>
-
-          <div class="stat-card__content">
-            <span class="stat-card__label">Total registradas</span>
-
-            <strong class="stat-card__value">
-              {{ resumen.total }}
-            </strong>
-
-            <span class="stat-card__description"> Historial acumulado </span>
-          </div>
+          <span class="stat-card__accent" :class="`stat-card__accent--${item.color}`" />
         </v-card>
       </v-col>
     </v-row>
+
     <v-card class="main-card" rounded="xl" elevation="0">
-      <!-- Toolbar -->
       <div class="alarm-toolbar">
         <div class="alarm-toolbar__title">
           <div class="section-icon">
-            <v-icon size="21">mdi-format-list-bulleted</v-icon>
+            <v-icon size="21"> mdi-format-list-bulleted </v-icon>
           </div>
 
           <div>
             <h2>Registro de alarmas</h2>
 
             <span>
-              {{ alarmas.length }}
-              {{ alarmas.length === 1 ? 'registro encontrado' : 'registros encontrados' }}
+              {{ alarmasFiltradas.length }}
+              {{ alarmasFiltradas.length === 1 ? 'registro encontrado' : 'registros encontrados' }}
             </span>
           </div>
         </div>
@@ -147,7 +129,6 @@
             hide-details
             prepend-inner-icon="mdi-filter-outline"
             class="filter-field"
-            @update:model-value="cargar"
           />
 
           <v-select
@@ -163,7 +144,6 @@
             clearable
             prepend-inner-icon="mdi-map-marker-outline"
             class="filter-field"
-            @update:model-value="cargar"
           />
 
           <v-btn
@@ -182,13 +162,41 @@
 
       <v-divider />
 
+      <div class="filter-status">
+        <div class="filter-status__main">
+          <div class="filter-status__icon">
+            <v-icon size="17"> mdi-greenhouse </v-icon>
+          </div>
+
+          <div>
+            <strong>
+              {{ zonaFiltroNombre ? zonaFiltroNombre : 'Zona A y Zona B' }}
+            </strong>
+
+            <span>
+              {{ zonaFiltroNombre ? distribucionFiltro : '14 naves operativas' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="filter-status__count">
+          <strong>
+            {{ alarmasFiltradas.length }}
+          </strong>
+
+          <span> de {{ alarmasNormalizadas.length }} alarmas </span>
+        </div>
+      </div>
+
+      <v-divider />
+
       <div v-if="cargando && alarmas.length === 0" class="pa-4">
         <div v-for="i in 4" :key="i" class="alarm-skeleton">
           <v-skeleton-loader type="avatar, list-item-two-line" class="w-100" />
         </div>
       </div>
 
-      <div v-else-if="alarmas.length === 0" class="empty-state">
+      <div v-else-if="alarmasFiltradas.length === 0" class="empty-state">
         <div class="empty-state__icon">
           <v-icon size="42" color="success"> mdi-shield-check-outline </v-icon>
         </div>
@@ -211,28 +219,39 @@
 
       <div v-else class="alarm-list">
         <div
-          v-for="alarma in alarmas"
+          v-for="alarma in alarmasFiltradas"
           :key="alarma.id"
           class="alarm-item"
           :class="{
-            'alarm-item--active': alarma.estado === 'activa',
-            'alarm-item--resolved': alarma.estado === 'resuelta',
+            'alarm-item--active': normalizarTexto(alarma.estado) === 'activa',
+
+            'alarm-item--resolved': normalizarTexto(alarma.estado) === 'resuelta',
           }"
         >
-          <!-- ICON -->
+          <span
+            class="alarm-severity-line"
+            :class="
+              normalizarTexto(alarma.estado) === 'activa'
+                ? `alarm-severity-line--${colorTipo(alarma.tipo)}`
+                : 'alarm-severity-line--resolved'
+            "
+          />
+
           <div
             class="alarm-item__icon"
-            :class="{
-              'alarm-item__icon--active': alarma.estado === 'activa',
-              'alarm-item__icon--resolved': alarma.estado === 'resuelta',
-            }"
+            :class="
+              normalizarTexto(alarma.estado) === 'activa'
+                ? `alarm-item__icon--${colorTipo(alarma.tipo)}`
+                : 'alarm-item__icon--resolved'
+            "
           >
             <v-icon size="23">
-              {{ alarma.estado === 'activa' ? 'mdi-alert-outline' : 'mdi-check' }}
+              {{
+                normalizarTexto(alarma.estado) === 'activa' ? iconTipo(alarma.tipo) : 'mdi-check'
+              }}
             </v-icon>
           </div>
 
-          <!-- CONTENT -->
           <div class="alarm-item__content">
             <div class="alarm-item__top">
               <div class="alarm-item__message">
@@ -255,20 +274,35 @@
 
                 <v-chip
                   size="small"
-                  :color="alarma.estado === 'activa' ? 'error' : 'success'"
+                  :color="normalizarTexto(alarma.estado) === 'activa' ? 'error' : 'success'"
                   variant="tonal"
+                  class="alarm-state-chip"
                 >
-                  {{ alarma.estado === 'activa' ? 'Activa' : 'Resuelta' }}
+                  <span
+                    class="alarm-state-dot"
+                    :class="{
+                      'alarm-state-dot--active': normalizarTexto(alarma.estado) === 'activa',
+
+                      'alarm-state-dot--resolved': normalizarTexto(alarma.estado) === 'resuelta',
+                    }"
+                  />
+
+                  {{ normalizarTexto(alarma.estado) === 'activa' ? 'Activa' : 'Resuelta' }}
                 </v-chip>
               </div>
             </div>
 
-            <!-- METADATA -->
             <div class="alarm-item__meta">
               <span class="alarm-meta">
                 <v-icon size="15"> mdi-map-marker-outline </v-icon>
 
-                {{ alarma.zona_nombre || 'Zona no especificada' }}
+                {{ alarma.zona_nombre || 'Zona no identificada' }}
+              </span>
+
+              <span v-if="alarma.__numero_nave" class="alarm-meta">
+                <v-icon size="15"> mdi-greenhouse </v-icon>
+
+                Nave {{ alarma.__numero_nave }}
               </span>
 
               <span class="alarm-meta">
@@ -280,21 +314,27 @@
               <span v-if="alarma.resuelta_at" class="alarm-meta alarm-meta--resolved">
                 <v-icon size="15"> mdi-check-circle-outline </v-icon>
 
-                Resuelta {{ formatFecha(alarma.resuelta_at) }}
+                Resuelta
+                {{ formatFecha(alarma.resuelta_at) }}
               </span>
             </div>
           </div>
 
-          <!-- ACTION -->
           <div class="alarm-item__action">
-            <v-tooltip v-if="alarma.estado === 'activa'" text="Marcar como resuelta" location="top">
-              <template #activator="{ props }">
+            <v-tooltip
+              v-if="normalizarTexto(alarma.estado) === 'activa'"
+              text="Marcar como resuelta"
+              location="top"
+            >
+              <template #activator="{ props: tooltipProps }">
                 <v-btn
-                  v-bind="props"
+                  v-bind="tooltipProps"
                   color="success"
                   variant="tonal"
                   icon
                   size="small"
+                  :loading="resolviendoId === alarma.id"
+                  :disabled="resolviendoId !== null || resolviendoTodas"
                   @click="resolver(alarma.id)"
                 >
                   <v-icon size="19"> mdi-check </v-icon>
@@ -302,7 +342,9 @@
               </template>
             </v-tooltip>
 
-            <v-icon v-else size="20" color="success"> mdi-check-circle </v-icon>
+            <div v-else class="resolved-indicator">
+              <v-icon size="20" color="success"> mdi-check-circle </v-icon>
+            </div>
           </div>
         </div>
       </div>
@@ -332,53 +374,361 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+
 import { storeToRefs } from 'pinia'
 
 import { useInvernaderosStore } from '../stores/invernaderos'
 import { useLoadingStore } from '../stores/loading'
+
 import api from '../api/axios'
 
 const invernaderosStore = useInvernaderosStore()
+
 const loadingStore = useLoadingStore()
 
 const { zonas } = storeToRefs(invernaderosStore)
 
 const alarmas = ref<any[]>([])
+
 const cargando = ref(false)
 
-const resumen = reactive({
-  activas: 0,
-  resueltas: 0,
-  total: 0,
-})
+const resolviendoId = ref<number | null>(null)
+
+const resolviendoTodas = ref(false)
+
+const ultimaActualizacion = ref('')
 
 const filtros = reactive({
   estado: 'Todos',
+
   zona_id: null as number | null,
 })
 
 const snackbar = reactive({
   visible: false,
+
   mensaje: '',
+
   color: 'success',
 })
 
 const estadosItems = [
   {
     title: 'Todos los estados',
+
     value: 'Todos',
   },
+
   {
     title: 'Activas',
+
     value: 'activa',
   },
+
   {
     title: 'Resueltas',
+
     value: 'resuelta',
   },
 ]
 
-const zonaItems = computed(() => zonas.value)
+const NAVE_MIN = 1
+const NAVE_MAX = 14
+
+const normalizarTexto = (valor: unknown) => {
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
+const obtenerLetraZona = (zona: any): 'A' | 'B' | null => {
+  const nombre = normalizarTexto(zona?.nombre)
+
+  if (nombre === 'a' || nombre.includes('zona a')) {
+    return 'A'
+  }
+
+  if (nombre === 'b' || nombre.includes('zona b')) {
+    return 'B'
+  }
+
+  return null
+}
+
+const zonaItems = computed(() => {
+  return zonas.value
+    .filter((zona: any) => Boolean(obtenerLetraZona(zona)))
+    .map((zona: any) => ({
+      ...zona,
+
+      nombre: obtenerLetraZona(zona) === 'A' ? 'Zona A' : 'Zona B',
+    }))
+    .sort((a: any, b: any) => String(a.nombre).localeCompare(String(b.nombre)))
+})
+
+const zonaFiltro = computed(() => {
+  if (!filtros.zona_id) {
+    return null
+  }
+
+  return zonaItems.value.find((zona: any) => Number(zona.id) === Number(filtros.zona_id)) ?? null
+})
+
+const zonaFiltroLetra = computed<'A' | 'B' | null>(() => {
+  return obtenerLetraZona(zonaFiltro.value)
+})
+
+const zonaFiltroNombre = computed(() => {
+  if (zonaFiltroLetra.value === 'A') {
+    return 'Zona A'
+  }
+
+  if (zonaFiltroLetra.value === 'B') {
+    return 'Zona B'
+  }
+
+  return ''
+})
+
+const distribucionFiltro = computed(() => {
+  if (zonaFiltroLetra.value === 'A') {
+    return 'Naves 1 · 3 · 5 · 7 · 9 · 11 · 13'
+  }
+
+  if (zonaFiltroLetra.value === 'B') {
+    return 'Naves 2 · 4 · 6 · 8 · 10 · 12 · 14'
+  }
+
+  return ''
+})
+
+const numeroNaveAlarma = (alarma: any): number | null => {
+  const candidatos = [
+    alarma?.numero_nave,
+    alarma?.nave_numero,
+    alarma?.numeroNave,
+
+    alarma?.galpon_numero,
+    alarma?.numero_galpon,
+
+    alarma?.invernadero_numero,
+    alarma?.numero_invernadero,
+
+    alarma?.nave_nombre,
+    alarma?.galpon_nombre,
+    alarma?.invernadero_nombre,
+  ]
+
+  for (const candidato of candidatos) {
+    if (candidato === null || candidato === undefined) {
+      continue
+    }
+
+    if (typeof candidato === 'number') {
+      if (Number.isFinite(candidato) && candidato >= NAVE_MIN && candidato <= NAVE_MAX) {
+        return candidato
+      }
+
+      continue
+    }
+
+    const coincidencia = String(candidato).match(/\d+/)
+
+    if (!coincidencia) {
+      continue
+    }
+
+    const numero = Number(coincidencia[0])
+
+    if (Number.isFinite(numero) && numero >= NAVE_MIN && numero <= NAVE_MAX) {
+      return numero
+    }
+  }
+
+  /*
+   * Si la alarma únicamente trae el
+   * número dentro del mensaje, buscamos
+   * específicamente expresiones como:
+   *
+   * Galpón 3
+   * Invernadero 8
+   * Nave 11
+   *
+   * No extraemos cualquier número porque
+   * el mensaje podría contener 38 °C,
+   * 70% de humedad, etc.
+   */
+  const mensaje = String(alarma?.mensaje ?? '')
+
+  const coincidenciaMensaje = mensaje.match(/(?:nave|galp[oó]n|invernadero)\s*#?\s*(\d{1,2})/i)
+
+  if (coincidenciaMensaje) {
+    const numero = Number(coincidenciaMensaje[1])
+
+    if (numero >= NAVE_MIN && numero <= NAVE_MAX) {
+      return numero
+    }
+  }
+
+  return null
+}
+
+const letraZonaAlarma = (alarma: any): 'A' | 'B' | null => {
+  const numero = numeroNaveAlarma(alarma)
+
+  if (numero !== null) {
+    return numero % 2 !== 0 ? 'A' : 'B'
+  }
+
+  /*
+   * Intentamos resolver por zona_id
+   * utilizando únicamente A/B.
+   */
+  if (alarma?.zona_id) {
+    const zona = zonaItems.value.find((item: any) => Number(item.id) === Number(alarma.zona_id))
+
+    const letra = obtenerLetraZona(zona)
+
+    if (letra) {
+      return letra
+    }
+  }
+
+  const nombre = normalizarTexto(alarma?.zona_nombre)
+
+  if (nombre === 'a' || nombre.includes('zona a')) {
+    return 'A'
+  }
+
+  if (nombre === 'b' || nombre.includes('zona b')) {
+    return 'B'
+  }
+
+  return null
+}
+
+const nombreZonaAlarma = (alarma: any) => {
+  const letra = letraZonaAlarma(alarma)
+
+  if (letra) {
+    return `Zona ${letra}`
+  }
+
+  return 'Zona no identificada'
+}
+
+const normalizarMensaje = (mensaje: string | null | undefined) => {
+  if (!mensaje) {
+    return 'Alarma detectada por el sistema'
+  }
+
+  return String(mensaje)
+    .replace(/\bgalpones\b/gi, 'naves')
+    .replace(/\bgalp[oó]n\b/gi, 'nave')
+    .replace(/\binvernaderos\b/gi, 'naves')
+    .replace(/\binvernadero\b/gi, 'nave')
+    .replace(/\btinkerboard\b/gi, 'microcontrolador')
+    .replace(/\btinker board\b/gi, 'microcontrolador')
+}
+
+const alarmasNormalizadas = computed(() => {
+  return alarmas.value
+    .map((alarma) => {
+      const numeroNave = numeroNaveAlarma(alarma)
+
+      return {
+        ...alarma,
+
+        mensaje: normalizarMensaje(alarma.mensaje),
+
+        zona_nombre: nombreZonaAlarma(alarma),
+
+        __numero_nave: numeroNave,
+
+        __zona_letra: letraZonaAlarma(alarma),
+      }
+    })
+    .sort((a, b) => {
+      const fechaA = new Date(a.created_at ?? 0).getTime()
+
+      const fechaB = new Date(b.created_at ?? 0).getTime()
+
+      return fechaB - fechaA
+    })
+})
+
+const alarmasFiltradas = computed(() => {
+  let resultado = [...alarmasNormalizadas.value]
+
+  if (filtros.estado !== 'Todos') {
+    resultado = resultado.filter(
+      (alarma) => normalizarTexto(alarma.estado) === normalizarTexto(filtros.estado),
+    )
+  }
+
+  if (zonaFiltroLetra.value) {
+    resultado = resultado.filter((alarma) => alarma.__zona_letra === zonaFiltroLetra.value)
+  }
+
+  return resultado
+})
+
+const resumen = computed(() => {
+  const activas = alarmasNormalizadas.value.filter(
+    (alarma) => normalizarTexto(alarma.estado) === 'activa',
+  ).length
+
+  const resueltas = alarmasNormalizadas.value.filter(
+    (alarma) => normalizarTexto(alarma.estado) === 'resuelta',
+  ).length
+
+  return {
+    activas,
+    resueltas,
+
+    total: alarmasNormalizadas.value.length,
+  }
+})
+
+const indicadores = computed(() => [
+  {
+    label: 'Alarmas activas',
+
+    value: resumen.value.activas,
+
+    description: 'Requieren atención',
+
+    icon: 'mdi-alert-circle-outline',
+
+    color: 'error',
+  },
+
+  {
+    label: 'Resueltas',
+
+    value: resumen.value.resueltas,
+
+    description: 'Incidencias atendidas',
+
+    icon: 'mdi-check-circle-outline',
+
+    color: 'success',
+  },
+
+  {
+    label: 'Total registradas',
+
+    value: resumen.value.total,
+
+    description: 'Historial acumulado',
+
+    icon: 'mdi-bell-outline',
+
+    color: 'primary',
+  },
+])
 
 const hayFiltrosActivos = computed(() => {
   return filtros.estado !== 'Todos' || filtros.zona_id !== null
@@ -386,12 +736,14 @@ const hayFiltrosActivos = computed(() => {
 
 const mostrarSnackbar = (mensaje: string, color = 'success') => {
   snackbar.mensaje = mensaje
+
   snackbar.color = color
+
   snackbar.visible = true
 }
 
 const colorTipo = (tipo: string) => {
-  switch (tipo) {
+  switch (normalizarTexto(tipo)) {
     case 'temperatura_alta':
       return 'error'
 
@@ -404,13 +756,22 @@ const colorTipo = (tipo: string) => {
     case 'humedad_alta':
       return 'primary'
 
+    case 'variador_error':
+    case 'error_variador':
+      return 'error'
+
+    case 'comunicacion_perdida':
+    case 'microcontrolador_desconectado':
+    case 'tinker_desconectado':
+      return 'warning'
+
     default:
-      return 'grey'
+      return 'primary'
   }
 }
 
 const labelTipo = (tipo: string) => {
-  switch (tipo) {
+  switch (normalizarTexto(tipo)) {
     case 'temperatura_alta':
       return 'Temperatura'
 
@@ -423,13 +784,24 @@ const labelTipo = (tipo: string) => {
     case 'humedad_alta':
       return 'Humedad'
 
+    case 'variador_error':
+    case 'error_variador':
+      return 'Variador'
+
+    case 'comunicacion_perdida':
+      return 'Comunicación'
+
+    case 'microcontrolador_desconectado':
+    case 'tinker_desconectado':
+      return 'Microcontrolador'
+
     default:
-      return tipo
+      return tipo || 'Sistema'
   }
 }
 
 const iconTipo = (tipo: string) => {
-  switch (tipo) {
+  switch (normalizarTexto(tipo)) {
     case 'temperatura_alta':
       return 'mdi-thermometer-high'
 
@@ -442,62 +814,106 @@ const iconTipo = (tipo: string) => {
     case 'humedad_alta':
       return 'mdi-water-percent'
 
+    case 'variador_error':
+    case 'error_variador':
+      return 'mdi-engine-off-outline'
+
+    case 'comunicacion_perdida':
+      return 'mdi-access-point-off'
+
+    case 'microcontrolador_desconectado':
+    case 'tinker_desconectado':
+      return 'mdi-chip'
+
     default:
       return 'mdi-alert-outline'
   }
 }
 
-const formatFecha = (fecha: string) => {
-  if (!fecha) return '-'
+const fechaValida = (fecha: string) => {
+  const valor = new Date(fecha)
 
-  return new Date(fecha).toLocaleString('es-EC', {
+  if (Number.isNaN(valor.getTime())) {
+    return null
+  }
+
+  return valor
+}
+
+const formatFecha = (fecha: string) => {
+  if (!fecha) {
+    return '—'
+  }
+
+  const valor = fechaValida(fecha)
+
+  if (!valor) {
+    return '—'
+  }
+
+  return valor.toLocaleString('es-EC', {
     day: '2-digit',
+
     month: 'short',
+
     year: 'numeric',
+
     hour: '2-digit',
+
     minute: '2-digit',
+
     hour12: false,
   })
 }
 
-const limpiarFiltros = async () => {
+const limpiarFiltros = () => {
   filtros.estado = 'Todos'
-  filtros.zona_id = null
 
-  await cargar()
+  filtros.zona_id = null
+}
+
+const actualizarHora = () => {
+  ultimaActualizacion.value = new Date().toLocaleTimeString('es-EC', {
+    hour: '2-digit',
+
+    minute: '2-digit',
+
+    hour12: false,
+  })
 }
 
 const cargar = async () => {
+  if (cargando.value) {
+    return
+  }
+
   cargando.value = true
 
   try {
-    const params: Record<string, any> = {}
+    /*
+     * Cargamos todas las alarmas y
+     * aplicamos los filtros en frontend.
+     *
+     * Mientras el backend conserve
+     * asociaciones antiguas con Zona C/D,
+     * esto permite reorganizar las alarmas:
+     *
+     * Zona A -> naves impares
+     * Zona B -> naves pares
+     */
+    const { data } = await api.get('/alarmas')
 
-    if (filtros.estado !== 'Todos') {
-      params.estado = filtros.estado
+    if (data?.ok) {
+      alarmas.value = Array.isArray(data.data) ? data.data : []
+    } else {
+      alarmas.value = []
     }
 
-    if (filtros.zona_id) {
-      params.zona_id = filtros.zona_id
-    }
-
-    const [alarmasRes, resumenRes] = await Promise.all([
-      api.get('/alarmas', {
-        params,
-      }),
-
-      api.get('/alarmas/resumen'),
-    ])
-
-    if (alarmasRes.data.ok) {
-      alarmas.value = alarmasRes.data.data
-    }
-
-    if (resumenRes.data.ok) {
-      Object.assign(resumen, resumenRes.data.data)
-    }
+    actualizarHora()
   } catch (error) {
-    console.error(error)
+    console.error('Error cargando alarmas:', error)
+
+    alarmas.value = []
 
     mostrarSnackbar('Error cargando alarmas', 'error')
   } finally {
@@ -506,30 +922,54 @@ const cargar = async () => {
 }
 
 const resolver = async (id: number) => {
+  if (resolviendoId.value !== null || resolviendoTodas.value) {
+    return
+  }
+
+  resolviendoId.value = id
+
   try {
-    await api.patch(`/alarmas/${id}/resolver`)
+    const { data } = await api.patch(`/alarmas/${id}/resolver`)
+
+    if (data?.ok === false) {
+      throw new Error(data?.message || 'No fue posible resolver la alarma')
+    }
 
     mostrarSnackbar('Alarma resuelta correctamente')
 
     await cargar()
   } catch (error) {
-    console.error(error)
+    console.error('Error resolviendo alarma:', error)
 
-    mostrarSnackbar('Error resolviendo alarma', 'error')
+    mostrarSnackbar('Error resolviendo la alarma', 'error')
+  } finally {
+    resolviendoId.value = null
   }
 }
 
 const resolverTodas = async () => {
+  if (resolviendoTodas.value || resumen.value.activas === 0) {
+    return
+  }
+
+  resolviendoTodas.value = true
+
   try {
-    await api.patch('/alarmas/resolver-todas')
+    const { data } = await api.patch('/alarmas/resolver-todas')
+
+    if (data?.ok === false) {
+      throw new Error(data?.message || 'No fue posible resolver las alarmas')
+    }
 
     mostrarSnackbar('Todas las alarmas fueron resueltas')
 
     await cargar()
   } catch (error) {
-    console.error(error)
+    console.error('Error resolviendo las alarmas:', error)
 
     mostrarSnackbar('Error resolviendo las alarmas', 'error')
+  } finally {
+    resolviendoTodas.value = false
   }
 }
 
@@ -538,6 +978,7 @@ onMounted(async () => {
 
   try {
     await invernaderosStore.cargarZonas()
+
     await cargar()
   } finally {
     loadingStore.ocultar()
@@ -546,7 +987,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
 .alarmas-page {
   max-width: 1500px;
   margin: 0 auto;
@@ -556,18 +996,21 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   gap: 24px;
 }
 
 .page-header__content {
   display: flex;
   align-items: center;
+
   gap: 14px;
 }
 
 .page-header__icon {
   width: 46px;
   height: 46px;
+
   flex: 0 0 46px;
 
   display: flex;
@@ -577,15 +1020,17 @@ onMounted(async () => {
   border-radius: 14px;
 
   color: rgb(var(--v-theme-primary));
+
   background: rgba(var(--v-theme-primary), 0.1);
 }
 
 .page-title {
   margin: 0;
 
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 750;
   line-height: 1.3;
+
   letter-spacing: -0.02em;
 }
 
@@ -593,55 +1038,91 @@ onMounted(async () => {
   margin: 4px 0 0;
 
   font-size: 0.875rem;
+  line-height: 1.45;
 
-  color: rgba(var(--v-theme-on-surface), 0.62);
+  color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.status-chip {
+  font-weight: 600;
 }
 
 .page-header__actions {
   display: flex;
   align-items: center;
+
   gap: 10px;
 }
 
+.last-update {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-right: 2px;
+
+  font-size: 0.74rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
 .stat-card {
-  min-height: 122px;
+  position: relative;
+
+  min-height: 110px;
 
   display: flex;
   align-items: center;
 
-  gap: 16px;
+  gap: 14px;
 
-  padding: 20px;
-
-  position: relative;
-
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  padding: 17px;
 
   overflow: hidden;
 
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
 
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.055) !important;
 }
 
 .stat-card__icon {
-  width: 50px;
-  height: 50px;
+  width: 46px;
+  height: 46px;
 
-  flex: 0 0 50px;
+  flex: 0 0 46px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 15px;
+  border-radius: 13px;
+}
+
+.stat-card__icon--error {
+  color: rgb(var(--v-theme-error));
+
+  background: rgba(var(--v-theme-error), 0.09);
+}
+
+.stat-card__icon--success {
+  color: rgb(var(--v-theme-success));
+
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.stat-card__icon--primary {
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .stat-card__content {
@@ -652,82 +1133,56 @@ onMounted(async () => {
 }
 
 .stat-card__label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
 
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgba(var(--v-theme-on-surface), 0.58);
 }
 
 .stat-card__value {
   margin-top: 2px;
 
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 750;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .stat-card__description {
   margin-top: 3px;
 
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.52);
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
-/* ERROR */
-
-.stat-card--error .stat-card__icon {
-  color: rgb(var(--v-theme-error));
-
-  background: rgba(var(--v-theme-error), 0.1);
-}
-
-.stat-card--error .stat-card__value {
-  color: rgb(var(--v-theme-error));
-}
-
-/* SUCCESS */
-
-.stat-card--success .stat-card__icon {
-  color: rgb(var(--v-theme-success));
-
-  background: rgba(var(--v-theme-success), 0.1);
-}
-
-.stat-card--success .stat-card__value {
-  color: rgb(var(--v-theme-success));
-}
-
-/* PRIMARY */
-
-.stat-card--primary .stat-card__icon {
-  color: rgb(var(--v-theme-primary));
-
-  background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.stat-card--primary .stat-card__value {
-  color: rgb(var(--v-theme-primary));
-}
-
-.stat-card__indicator {
+.stat-card__accent {
   position: absolute;
 
+  top: 22px;
   right: 0;
-  top: 24px;
-  bottom: 24px;
+  bottom: 22px;
 
-  width: 4px;
+  width: 3px;
 
-  border-radius: 10px 0 0 10px;
+  border-radius: 4px 0 0 4px;
+}
 
+.stat-card__accent--error {
   background: rgb(var(--v-theme-error));
 }
 
-.main-card {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+.stat-card__accent--success {
+  background: rgb(var(--v-theme-success));
+}
 
+.stat-card__accent--primary {
+  background: rgb(var(--v-theme-primary));
+}
+
+.main-card {
   overflow: hidden;
+
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .alarm-toolbar {
@@ -739,38 +1194,23 @@ onMounted(async () => {
 
   gap: 20px;
 
-  padding: 16px 20px;
+  padding: 15px 18px;
 }
 
 .alarm-toolbar__title {
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
 
-  gap: 12px;
-
-  flex-shrink: 0;
-}
-
-.alarm-toolbar__title h2 {
-  margin: 0;
-
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.alarm-toolbar__title span {
-  display: block;
-
-  margin-top: 2px;
-
-  font-size: 0.72rem;
-
-  color: rgba(var(--v-theme-on-surface), 0.54);
+  gap: 11px;
 }
 
 .section-icon {
   width: 38px;
   height: 38px;
+
+  flex: 0 0 38px;
 
   display: flex;
   align-items: center;
@@ -783,15 +1223,128 @@ onMounted(async () => {
   background: rgba(var(--v-theme-primary), 0.08);
 }
 
+.alarm-toolbar__title h2 {
+  margin: 0;
+
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.alarm-toolbar__title span {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 0.72rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.52);
+}
+
 .alarm-toolbar__filters {
   display: flex;
   align-items: center;
 
-  gap: 10px;
+  gap: 9px;
 }
 
 .filter-field {
-  width: 210px;
+  width: 200px;
+}
+
+.filter-field :deep(.v-field__input) {
+  font-size: 0.84rem;
+}
+
+.filter-field :deep(.v-field-label) {
+  font-size: 0.8rem;
+}
+
+.filter-field :deep(.v-select__selection-text) {
+  font-size: 0.84rem;
+}
+
+.filter-status {
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 9px 18px;
+
+  background: rgba(var(--v-theme-primary), 0.025);
+}
+
+.filter-status__main {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+}
+
+.filter-status__icon {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+
+.filter-status__main > div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-status__main strong {
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.filter-status__main span {
+  margin-top: 2px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 0.7rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.filter-status__count {
+  display: flex;
+  align-items: baseline;
+
+  gap: 4px;
+
+  flex-shrink: 0;
+}
+
+.filter-status__count strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.filter-status__count span {
+  font-size: 0.7rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .alarm-list {
@@ -801,15 +1354,18 @@ onMounted(async () => {
 .alarm-item {
   position: relative;
 
+  min-height: 88px;
+
   display: flex;
   align-items: center;
 
-  gap: 14px;
-
-  min-height: 82px;
+  gap: 13px;
 
   margin-top: 8px;
-  padding: 14px 14px 14px 16px;
+
+  padding: 13px 13px 13px 16px;
+
+  overflow: hidden;
 
   border: 1px solid rgba(var(--v-border-color), 0.55);
 
@@ -825,17 +1381,49 @@ onMounted(async () => {
 .alarm-item:hover {
   transform: translateY(-1px);
 
-  border-color: rgba(var(--v-theme-primary), 0.25);
+  border-color: rgba(var(--v-theme-primary), 0.22);
 
   box-shadow: 0 5px 18px rgba(0, 0, 0, 0.045);
 }
 
 .alarm-item--active {
-  background: linear-gradient(90deg, rgba(var(--v-theme-error), 0.045), transparent 45%);
+  background: linear-gradient(90deg, rgba(var(--v-theme-error), 0.035), transparent 43%);
 }
 
 .alarm-item--resolved {
   opacity: 0.78;
+}
+
+.alarm-severity-line {
+  position: absolute;
+
+  top: 15px;
+  left: 0;
+  bottom: 15px;
+
+  width: 3px;
+
+  border-radius: 0 4px 4px 0;
+}
+
+.alarm-severity-line--error {
+  background: rgb(var(--v-theme-error));
+}
+
+.alarm-severity-line--warning {
+  background: rgb(var(--v-theme-warning));
+}
+
+.alarm-severity-line--info {
+  background: rgb(var(--v-theme-info));
+}
+
+.alarm-severity-line--primary {
+  background: rgb(var(--v-theme-primary));
+}
+
+.alarm-severity-line--resolved {
+  background: rgb(var(--v-theme-success));
 }
 
 .alarm-item__icon {
@@ -851,21 +1439,39 @@ onMounted(async () => {
   border-radius: 12px;
 }
 
-.alarm-item__icon--active {
+.alarm-item__icon--error {
   color: rgb(var(--v-theme-error));
 
-  background: rgba(var(--v-theme-error), 0.1);
+  background: rgba(var(--v-theme-error), 0.09);
+}
+
+.alarm-item__icon--warning {
+  color: rgb(var(--v-theme-warning));
+
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.alarm-item__icon--info {
+  color: rgb(var(--v-theme-info));
+
+  background: rgba(var(--v-theme-info), 0.09);
+}
+
+.alarm-item__icon--primary {
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.09);
 }
 
 .alarm-item__icon--resolved {
   color: rgb(var(--v-theme-success));
 
-  background: rgba(var(--v-theme-success), 0.1);
+  background: rgba(var(--v-theme-success), 0.09);
 }
 
 .alarm-item__content {
-  flex: 1;
   min-width: 0;
+  flex: 1;
 }
 
 .alarm-item__top {
@@ -879,12 +1485,12 @@ onMounted(async () => {
 .alarm-item__message {
   min-width: 0;
 
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.4;
-
   overflow: hidden;
   text-overflow: ellipsis;
+
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .alarm-item__chips {
@@ -897,18 +1503,40 @@ onMounted(async () => {
 }
 
 .alarm-type-chip {
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 550;
+}
+
+.alarm-state-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.alarm-state-dot {
+  width: 6px;
+  height: 6px;
+
+  margin-right: 6px;
+
+  border-radius: 50%;
+}
+
+.alarm-state-dot--active {
+  background: rgb(var(--v-theme-error));
+}
+
+.alarm-state-dot--resolved {
+  background: rgb(var(--v-theme-success));
 }
 
 .alarm-item__meta {
   display: flex;
   flex-wrap: wrap;
-
   align-items: center;
 
-  gap: 8px 16px;
+  gap: 7px 16px;
 
-  margin-top: 7px;
+  margin-top: 8px;
 }
 
 .alarm-meta {
@@ -919,7 +1547,7 @@ onMounted(async () => {
 
   font-size: 0.72rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.55);
+  color: rgba(var(--v-theme-on-surface), 0.54);
 }
 
 .alarm-meta--resolved {
@@ -930,8 +1558,21 @@ onMounted(async () => {
   min-width: 40px;
 
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+}
+
+.resolved-indicator {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: rgba(var(--v-theme-success), 0.06);
 }
 
 .empty-state {
@@ -965,7 +1606,7 @@ onMounted(async () => {
 .empty-state h3 {
   margin: 0;
 
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -974,29 +1615,34 @@ onMounted(async () => {
 
   margin: 6px 0 18px;
 
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
 
-  color: rgba(var(--v-theme-on-surface), 0.55);
+  color: rgba(var(--v-theme-on-surface), 0.54);
 }
 
 .alarm-skeleton {
-  min-height: 74px;
+  min-height: 78px;
 
   display: flex;
   align-items: center;
 
   margin-bottom: 8px;
 
+  overflow: hidden;
+
   border: 1px solid rgba(var(--v-border-color), 0.45);
 
   border-radius: 14px;
-
-  overflow: hidden;
 }
 
-@media (max-width: 959px) {
+@media (max-width: 1050px) {
   .page-header {
     align-items: flex-start;
+  }
+
+  .last-update {
+    display: none;
   }
 
   .alarm-toolbar {
@@ -1016,13 +1662,32 @@ onMounted(async () => {
 
 @media (max-width: 700px) {
   .alarmas-page {
-    padding: 16px !important;
+    padding: 14px !important;
   }
 
   .page-header {
     flex-direction: column;
 
-    gap: 16px;
+    gap: 15px;
+  }
+
+  .page-header__content {
+    align-items: flex-start;
+  }
+
+  .page-header__icon {
+    width: 42px;
+    height: 42px;
+
+    flex-basis: 42px;
+  }
+
+  .page-title {
+    font-size: 1.22rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.8rem;
   }
 
   .page-header__actions {
@@ -1033,12 +1698,27 @@ onMounted(async () => {
     flex: 1;
   }
 
-  .page-title {
-    font-size: 1.25rem;
+  .stat-card {
+    min-height: 92px;
+
+    padding: 13px;
+
+    gap: 10px;
   }
 
-  .page-subtitle {
-    font-size: 0.8rem;
+  .stat-card__icon {
+    width: 40px;
+    height: 40px;
+
+    flex-basis: 40px;
+  }
+
+  .stat-card__value {
+    font-size: 1.35rem;
+  }
+
+  .alarm-toolbar {
+    padding: 14px;
   }
 
   .alarm-toolbar__filters {
@@ -1050,10 +1730,14 @@ onMounted(async () => {
     width: 100%;
   }
 
+  .filter-status {
+    padding: 9px 14px;
+  }
+
   .alarm-item {
     align-items: flex-start;
 
-    padding: 14px;
+    padding: 13px 12px 13px 15px;
   }
 
   .alarm-item__top {
@@ -1073,19 +1757,28 @@ onMounted(async () => {
 }
 
 @media (max-width: 480px) {
-  .page-header__icon {
-    width: 42px;
-    height: 42px;
-
-    flex-basis: 42px;
+  .status-chip {
+    display: none;
   }
 
   .page-header__actions {
-    flex-direction: column;
+    display: grid;
+
+    grid-template-columns:
+      1fr
+      1fr;
   }
 
   .page-header__actions .v-btn {
     width: 100%;
+  }
+
+  .filter-status {
+    align-items: flex-start;
+  }
+
+  .filter-status__count {
+    display: none;
   }
 
   .alarm-item__icon {
@@ -1111,7 +1804,7 @@ onMounted(async () => {
   }
 
   .alarm-item__meta {
-    padding-right: 34px;
+    padding-right: 37px;
   }
 }
 </style>

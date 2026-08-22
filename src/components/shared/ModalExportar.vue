@@ -518,7 +518,7 @@ const columnasEventos: ColumnaExportacion[] = [
   },
   {
     key: 'invernadero_nombre',
-    label: 'Invernadero',
+    label: 'Nave',
   },
   {
     key: 'zona_nombre',
@@ -793,7 +793,7 @@ const mapearFila = (dato: any): Record<string, any> => {
     return {
       fecha: formatFecha(dato.created_at),
 
-      invernadero_nombre: dato.invernadero_nombre ?? '—',
+      invernadero_nombre: normalizarNombreNave(dato.invernadero_nombre),
 
       zona_nombre: dato.zona_nombre ?? '—',
 
@@ -805,7 +805,7 @@ const mapearFila = (dato: any): Record<string, any> => {
 
       usuario_nombre: dato.usuario_nombre ?? 'Sistema',
 
-      detalle: dato.detalle ?? '—',
+      detalle: normalizarTextoOperativo(dato.detalle),
     }
   }
 
@@ -949,6 +949,29 @@ const exportar = (formato: 'excel' | 'pdf') => {
   }
 
   visible.value = false
+}
+
+const normalizarNombreNave = (valor: string | null | undefined) => {
+  if (!valor) {
+    return '—'
+  }
+
+  return String(valor)
+    .replace(/\bgalp[oó]n\b/gi, 'Nave')
+    .replace(/\binvernadero\b/gi, 'Nave')
+}
+
+const normalizarTextoOperativo = (valor: string | null | undefined) => {
+  if (!valor) {
+    return '—'
+  }
+
+  return String(valor)
+    .replace(/\bgalpones\b/gi, 'naves')
+    .replace(/\bgalp[oó]n\b/gi, 'nave')
+    .replace(/\binvernaderos\b/gi, 'naves')
+    .replace(/\binvernadero\b/gi, 'nave')
+    .replace(/\btinkerboard\b/gi, 'microcontrolador')
 }
 
 watch(fechaDesdeObj, (valor) => {

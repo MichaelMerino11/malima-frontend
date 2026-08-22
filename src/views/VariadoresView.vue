@@ -18,7 +18,7 @@
           </div>
 
           <p class="page-subtitle">
-            Monitoreo operativo de frecuencia, amperaje y estado por zona.
+            Monitoreo en tiempo real de los variadores asociados a cada nave.
           </p>
         </div>
       </div>
@@ -52,88 +52,40 @@
       </div>
     </div>
 
-    <v-row class="mb-6">
-      <!-- TOTAL -->
-      <v-col cols="6" md="3">
-        <v-card class="summary-card summary-card--primary" rounded="xl" elevation="0">
-          <div class="summary-card__icon">
-            <v-icon size="25"> mdi-engine </v-icon>
+    <v-row class="mb-5">
+      <v-col v-for="item in indicadores" :key="item.label" cols="6" md="3">
+        <v-card class="summary-card" rounded="xl" elevation="0">
+          <div class="summary-card__icon" :class="`summary-card__icon--${item.color}`">
+            <v-icon
+              size="24"
+              :class="{
+                rotating: item.rotating && Number(item.value) > 0,
+              }"
+            >
+              {{ item.icon }}
+            </v-icon>
           </div>
 
           <div class="summary-card__info">
-            <span class="summary-card__label"> Total </span>
+            <span class="summary-card__label">
+              {{ item.label }}
+            </span>
 
             <strong class="summary-card__value">
-              {{ totalVariadores }}
+              {{ item.value }}
             </strong>
 
-            <span class="summary-card__description"> Variadores registrados </span>
-          </div>
-        </v-card>
-      </v-col>
-
-      <!-- OPERACIÓN -->
-      <v-col cols="6" md="3">
-        <v-card class="summary-card summary-card--success" rounded="xl" elevation="0">
-          <div class="summary-card__icon">
-            <v-icon size="25"> mdi-play-circle-outline </v-icon>
+            <span class="summary-card__description">
+              {{ item.description }}
+            </span>
           </div>
 
-          <div class="summary-card__info">
-            <span class="summary-card__label"> Operativos </span>
-
-            <strong class="summary-card__value">
-              {{ totalOperativos }}
-            </strong>
-
-            <span class="summary-card__description"> En funcionamiento </span>
-          </div>
-        </v-card>
-      </v-col>
-
-      <!-- MOVIMIENTO -->
-      <v-col cols="6" md="3">
-        <v-card class="summary-card summary-card--warning" rounded="xl" elevation="0">
-          <div class="summary-card__icon">
-            <v-icon size="25" :class="{ rotating: totalMovimiento > 0 }"> mdi-cog-outline </v-icon>
-          </div>
-
-          <div class="summary-card__info">
-            <span class="summary-card__label"> En movimiento </span>
-
-            <strong class="summary-card__value">
-              {{ totalMovimiento }}
-            </strong>
-
-            <span class="summary-card__description"> Abriendo o cerrando </span>
-          </div>
-        </v-card>
-      </v-col>
-
-      <!-- ERROR -->
-      <v-col cols="6" md="3">
-        <v-card class="summary-card summary-card--error" rounded="xl" elevation="0">
-          <div class="summary-card__icon">
-            <v-icon size="25"> mdi-alert-circle-outline </v-icon>
-          </div>
-
-          <div class="summary-card__info">
-            <span class="summary-card__label"> Con error </span>
-
-            <strong class="summary-card__value">
-              {{ totalErrores }}
-            </strong>
-
-            <span class="summary-card__description"> Requieren atención </span>
-          </div>
-
-          <span v-if="totalErrores > 0" class="summary-alert" />
+          <span class="summary-card__accent" :class="`summary-card__accent--${item.color}`" />
         </v-card>
       </v-col>
     </v-row>
 
     <v-card rounded="xl" elevation="0" class="main-panel">
-      <!-- HEADER PANEL -->
       <div class="panel-header">
         <div class="panel-header__title">
           <div class="panel-icon">
@@ -141,13 +93,17 @@
           </div>
 
           <div>
-            <h2>Estado de variadores</h2>
+            <div class="d-flex align-center flex-wrap ga-2">
+              <h2>Estado de variadores</h2>
+
+              <v-chip color="primary" variant="tonal" size="x-small">
+                {{ zonaActualNombre }}
+              </v-chip>
+            </div>
 
             <p>
-              {{ zonaActualNombre }}
-              ·
               {{ variadores.length }}
-              {{ variadores.length === 1 ? 'equipo' : 'equipos' }}
+              {{ variadores.length === 1 ? 'equipo asociado' : 'equipos asociados' }}
             </p>
           </div>
         </div>
@@ -165,8 +121,41 @@
 
       <v-divider />
 
+      <div v-if="zonaSeleccionada" class="distribution-bar">
+        <div class="distribution-bar__left">
+          <div
+            class="distribution-icon"
+            :class="zonaActualLetra === 'A' ? 'distribution-icon--a' : 'distribution-icon--b'"
+          >
+            <v-icon size="19"> mdi-sitemap-outline </v-icon>
+          </div>
+
+          <div class="distribution-info">
+            <span> Distribución de {{ zonaActualNombre }} </span>
+
+            <strong>
+              {{ distribucionActual }}
+            </strong>
+          </div>
+        </div>
+
+        <div class="distribution-bar__right">
+          <v-chip
+            :color="zonaActualLetra === 'A' ? 'primary' : 'info'"
+            variant="tonal"
+            size="small"
+          >
+            <v-icon start size="14"> mdi-greenhouse </v-icon>
+
+            {{ zonaActualLetra === 'A' ? 'Naves impares' : 'Naves pares' }}
+          </v-chip>
+        </div>
+      </div>
+
+      <v-divider />
+
       <v-row v-if="cargando && variadores.length === 0" class="pa-4">
-        <v-col v-for="i in 8" :key="i" cols="12" sm="6" lg="4" xl="3">
+        <v-col v-for="i in 7" :key="i" cols="12" sm="6" lg="4" xl="3">
           <v-skeleton-loader type="heading, paragraph, list-item-two-line" class="skeleton-card" />
         </v-col>
       </v-row>
@@ -179,7 +168,7 @@
         <h3>No hay variadores disponibles</h3>
 
         <p>
-          No se encontraron equipos configurados para
+          No se encontraron equipos asociados a las naves de
           {{ zonaActualNombre }}.
         </p>
 
@@ -202,13 +191,11 @@
             class="variador-card"
             :class="`variador-card--${estadoClase(variador.estado)}`"
           >
-            <!-- ESTADO LATERAL -->
             <span
               class="variador-status-line"
               :class="`variador-status-line--${estadoClase(variador.estado)}`"
             />
 
-            <!-- CABECERA -->
             <div class="variador-card__header">
               <div class="variador-equipo">
                 <div
@@ -227,7 +214,7 @@
 
                 <div class="variador-equipo__text">
                   <span class="variador-name">
-                    {{ variador.galpon_nombre || 'Sin galpón' }}
+                    {{ nombreNave(variador) }}
                   </span>
 
                   <span class="variador-id"> Variador #{{ variador.id }} </span>
@@ -248,7 +235,6 @@
               </v-chip>
             </div>
 
-            <!-- FRECUENCIA PRINCIPAL -->
             <div class="frecuencia-section">
               <div class="frecuencia-section__header">
                 <div>
@@ -278,9 +264,7 @@
               </div>
             </div>
 
-            <!-- MÉTRICAS -->
             <div class="metrics-grid">
-              <!-- AMPERAJE -->
               <div class="metric-box">
                 <div class="metric-box__icon">
                   <v-icon size="18"> mdi-current-ac </v-icon>
@@ -291,12 +275,12 @@
 
                   <strong>
                     {{ formatearNumero(variador.amperaje) }}
-                    <small>A</small>
+
+                    <small> A </small>
                   </strong>
                 </div>
               </div>
 
-              <!-- MODO -->
               <div class="metric-box">
                 <div class="metric-box__icon">
                   <v-icon size="18"> mdi-tune-variant </v-icon>
@@ -306,13 +290,12 @@
                   <span class="metric-box__label"> Modo </span>
 
                   <strong class="text-capitalize">
-                    {{ variador.modo || 'N/D' }}
+                    {{ labelModo(variador.modo) }}
                   </strong>
                 </div>
               </div>
             </div>
 
-            <!-- FOOTER -->
             <div class="variador-card__footer">
               <div class="communication-status">
                 <span
@@ -326,8 +309,8 @@
               </div>
 
               <v-tooltip text="Información actualizada automáticamente" location="top">
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" size="17" color="medium-emphasis">
+                <template #activator="{ props: tooltipProps }">
+                  <v-icon v-bind="tooltipProps" size="17" color="medium-emphasis">
                     mdi-access-point
                   </v-icon>
                 </template>
@@ -336,63 +319,394 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <v-divider />
+
+      <div class="panel-footer">
+        <div class="panel-footer__status">
+          <v-icon size="16" color="success"> mdi-access-point </v-icon>
+
+          <span> Monitoreo activo </span>
+        </div>
+
+        <div class="panel-footer__info">
+          <span>
+            {{ zonaActualNombre }}
+          </span>
+
+          <span class="footer-dot" />
+
+          <span> {{ variadores.length }} de 7 equipos encontrados </span>
+        </div>
+      </div>
     </v-card>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+
 import { storeToRefs } from 'pinia'
 
 import { useInvernaderosStore } from '../stores/invernaderos'
+
 import { useLoadingStore } from '../stores/loading'
+
 import { useSocket } from '../composables/useSocket'
+
 import api from '../api/axios'
 
 const invernaderosStore = useInvernaderosStore()
+
 const loadingStore = useLoadingStore()
 
 const { zonas } = storeToRefs(invernaderosStore)
 
 const { unirseAZona, escuchar, dejarDeEscuchar } = useSocket()
 
-const variadores = ref<any[]>([])
+const variadoresFuente = ref<any[]>([])
+
 const cargando = ref(false)
 
-const zonaSeleccionada = ref<number>(1)
+const zonaSeleccionada = ref<number | null>(null)
 
-const zonaItems = computed(() => zonas.value)
+let intervalo: ReturnType<typeof setInterval> | undefined
+
+const NAVE_MIN = 1
+const NAVE_MAX = 14
+
+const normalizarTexto = (valor: unknown) => {
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+}
+
+const obtenerLetraZona = (zona: any): 'A' | 'B' | null => {
+  const nombre = normalizarTexto(zona?.nombre)
+
+  if (nombre === 'a' || nombre.includes('zona a')) {
+    return 'A'
+  }
+
+  if (nombre === 'b' || nombre.includes('zona b')) {
+    return 'B'
+  }
+
+  return null
+}
+
+const zonaItems = computed(() => {
+  return zonas.value
+    .filter((zona: any) => {
+      return Boolean(obtenerLetraZona(zona))
+    })
+    .map((zona: any) => ({
+      ...zona,
+
+      nombre: obtenerLetraZona(zona) === 'A' ? 'Zona A' : 'Zona B',
+    }))
+    .sort((a: any, b: any) => {
+      return String(a.nombre).localeCompare(String(b.nombre))
+    })
+})
+
+const zonaActual = computed(() => {
+  return zonaItems.value.find((zona: any) => Number(zona.id) === Number(zonaSeleccionada.value))
+})
+
+const zonaActualLetra = computed<'A' | 'B' | null>(() => {
+  return obtenerLetraZona(zonaActual.value)
+})
+
+const zonaActualNombre = computed(() => {
+  if (zonaActualLetra.value === 'A') {
+    return 'Zona A'
+  }
+
+  if (zonaActualLetra.value === 'B') {
+    return 'Zona B'
+  }
+
+  return 'Zona seleccionada'
+})
+
+const distribucionActual = computed(() => {
+  if (zonaActualLetra.value === 'A') {
+    return 'Naves 1 · 3 · 5 · 7 · 9 · 11 · 13'
+  }
+
+  if (zonaActualLetra.value === 'B') {
+    return 'Naves 2 · 4 · 6 · 8 · 10 · 12 · 14'
+  }
+
+  return 'Sin distribución definida'
+})
+
+const numeroNave = (variador: any): number | null => {
+  const candidatos = [
+    variador?.numero_nave,
+    variador?.numeroNave,
+    variador?.nave_numero,
+
+    variador?.galpon_numero,
+    variador?.numero_galpon,
+
+    variador?.invernadero_numero,
+
+    variador?.galpon_nombre,
+    variador?.invernadero_nombre,
+    variador?.nave_nombre,
+
+    variador?.nombre,
+    variador?.codigo,
+  ]
+
+  for (const candidato of candidatos) {
+    if (candidato === null || candidato === undefined) {
+      continue
+    }
+
+    if (typeof candidato === 'number') {
+      if (Number.isFinite(candidato)) {
+        return candidato
+      }
+
+      continue
+    }
+
+    const texto = String(candidato)
+
+    const coincidencia = texto.match(/\d+/)
+
+    if (coincidencia) {
+      const numero = Number(coincidencia[0])
+
+      if (Number.isFinite(numero)) {
+        return numero
+      }
+    }
+  }
+
+  /*
+   * Fallback temporal:
+   * si el backend no devuelve número
+   * de nave pero el ID del variador
+   * coincide con 1-14, podemos usarlo.
+   *
+   * Cuando la BD quede normalizada,
+   * este fallback se puede retirar.
+   */
+  const id = Number(variador?.id)
+
+  if (Number.isFinite(id) && id >= NAVE_MIN && id <= NAVE_MAX) {
+    return id
+  }
+
+  return null
+}
+
+const esNaveOperativa = (variador: any) => {
+  const numero = numeroNave(variador)
+
+  return numero !== null && numero >= NAVE_MIN && numero <= NAVE_MAX
+}
+
+const variadoresUnicos = computed(() => {
+  const mapa = new Map<number, any>()
+
+  for (const variador of variadoresFuente.value) {
+    if (!esNaveOperativa(variador)) {
+      continue
+    }
+
+    const numero = numeroNave(variador)
+
+    if (numero === null) {
+      continue
+    }
+
+    const existente = mapa.get(numero)
+
+    if (!existente) {
+      mapa.set(numero, variador)
+
+      continue
+    }
+
+    /*
+     * Si accidentalmente el backend
+     * devuelve la misma nave desde
+     * más de una zona, preferimos
+     * el registro que tenga más datos
+     * operativos disponibles.
+     */
+    const puntuacionExistente = calidadVariador(existente)
+
+    const puntuacionNuevo = calidadVariador(variador)
+
+    if (puntuacionNuevo > puntuacionExistente) {
+      mapa.set(numero, variador)
+    }
+  }
+
+  return Array.from(mapa.entries())
+    .sort(([numeroA], [numeroB]) => numeroA - numeroB)
+    .map(([, variador]) => variador)
+})
+
+const variadores = computed(() => {
+  const letra = zonaActualLetra.value
+
+  if (!letra) {
+    return []
+  }
+
+  return variadoresUnicos.value
+    .filter((variador) => {
+      const numero = numeroNave(variador)
+
+      if (numero === null) {
+        return false
+      }
+
+      if (letra === 'A') {
+        return numero % 2 !== 0
+      }
+
+      return numero % 2 === 0
+    })
+    .sort((a, b) => Number(numeroNave(a) ?? 0) - Number(numeroNave(b) ?? 0))
+})
+
+const calidadVariador = (variador: any) => {
+  let puntos = 0
+
+  if (variador?.estado) {
+    puntos++
+  }
+
+  if (variador?.hz !== null && variador?.hz !== undefined) {
+    puntos++
+  }
+
+  if (variador?.amperaje !== null && variador?.amperaje !== undefined) {
+    puntos++
+  }
+
+  if (variador?.modo) {
+    puntos++
+  }
+
+  return puntos
+}
 
 const totalVariadores = computed(() => {
   return variadores.value.length
 })
 
 const totalOperativos = computed(() => {
-  return variadores.value.filter(
-    (variador) => variador.estado !== 'detenido' && variador.estado !== 'error',
-  ).length
+  return variadores.value.filter((variador) => {
+    const estado = normalizarTexto(variador.estado)
+
+    return estado !== 'detenido' && estado !== 'error'
+  }).length
 })
 
 const totalMovimiento = computed(() => {
-  return variadores.value.filter(
-    (variador) => variador.estado === 'abriendo' || variador.estado === 'cerrando',
-  ).length
+  return variadores.value.filter((variador) => {
+    const estado = normalizarTexto(variador.estado)
+
+    return estado === 'abriendo' || estado === 'cerrando' || estado === 'en_movimiento'
+  }).length
 })
 
 const totalErrores = computed(() => {
-  return variadores.value.filter((variador) => variador.estado === 'error').length
+  return variadores.value.filter((variador) => normalizarTexto(variador.estado) === 'error').length
 })
 
-const zonaActualNombre = computed(() => {
-  const zona = zonas.value.find((item: any) => Number(item.id) === Number(zonaSeleccionada.value))
+const indicadores = computed(() => [
+  {
+    label: 'Total',
 
-  return zona?.nombre || 'Zona seleccionada'
-})
+    value: totalVariadores.value,
+
+    description: 'Variadores de la zona',
+
+    icon: 'mdi-engine',
+
+    color: 'primary',
+
+    rotating: false,
+  },
+
+  {
+    label: 'Operativos',
+
+    value: totalOperativos.value,
+
+    description: 'En funcionamiento',
+
+    icon: 'mdi-play-circle-outline',
+
+    color: 'success',
+
+    rotating: false,
+  },
+
+  {
+    label: 'En movimiento',
+
+    value: totalMovimiento.value,
+
+    description: 'Abriendo o cerrando',
+
+    icon: 'mdi-cog-outline',
+
+    color: 'warning',
+
+    rotating: true,
+  },
+
+  {
+    label: 'Con error',
+
+    value: totalErrores.value,
+
+    description: 'Requieren atención',
+
+    icon: 'mdi-alert-circle-outline',
+
+    color: 'error',
+
+    rotating: false,
+  },
+])
+
+const nombreNave = (variador: any) => {
+  const numero = numeroNave(variador)
+
+  if (numero !== null) {
+    return `Nave ${numero}`
+  }
+
+  const nombre = String(
+    variador?.galpon_nombre ?? variador?.invernadero_nombre ?? variador?.nave_nombre ?? '',
+  ).trim()
+
+  if (nombre) {
+    return nombre.replace(/galp[oó]n/gi, 'Nave').replace(/invernadero/gi, 'Nave')
+  }
+
+  return 'Nave sin identificar'
+}
 
 const colorEstado = (estado: string) => {
-  switch (estado) {
+  switch (normalizarTexto(estado)) {
     case 'abriendo':
     case 'cerrando':
+    case 'en_movimiento':
       return 'warning'
 
     case 'error':
@@ -407,9 +721,10 @@ const colorEstado = (estado: string) => {
 }
 
 const estadoClase = (estado: string) => {
-  switch (estado) {
+  switch (normalizarTexto(estado)) {
     case 'abriendo':
     case 'cerrando':
+    case 'en_movimiento':
       return 'warning'
 
     case 'error':
@@ -424,12 +739,15 @@ const estadoClase = (estado: string) => {
 }
 
 const labelEstado = (estado: string) => {
-  switch (estado) {
+  switch (normalizarTexto(estado)) {
     case 'abriendo':
       return 'Abriendo'
 
     case 'cerrando':
       return 'Cerrando'
+
+    case 'en_movimiento':
+      return 'En movimiento'
 
     case 'error':
       return 'Error'
@@ -449,12 +767,15 @@ const labelEstado = (estado: string) => {
 }
 
 const iconEstado = (estado: string) => {
-  switch (estado) {
+  switch (normalizarTexto(estado)) {
     case 'abriendo':
-      return 'mdi-arrow-expand-horizontal'
+      return 'mdi-arrow-up-circle-outline'
 
     case 'cerrando':
-      return 'mdi-arrow-collapse-horizontal'
+      return 'mdi-arrow-down-circle-outline'
+
+    case 'en_movimiento':
+      return 'mdi-cog-outline'
 
     case 'error':
       return 'mdi-alert-circle-outline'
@@ -465,6 +786,24 @@ const iconEstado = (estado: string) => {
     default:
       return 'mdi-check-circle-outline'
   }
+}
+
+const labelModo = (modo: string | null | undefined) => {
+  const valor = normalizarTexto(modo)
+
+  if (valor === 'automatico' || valor === 'automatica') {
+    return 'Automático'
+  }
+
+  if (valor === 'remoto') {
+    return 'Remoto'
+  }
+
+  if (valor === 'local') {
+    return 'Local'
+  }
+
+  return modo || 'N/D'
 }
 
 const formatearNumero = (value: number | string | null | undefined) => {
@@ -487,42 +826,89 @@ const porcentajeHz = (value: number | string | null | undefined) => {
   return Math.min(Math.max(Math.round((hz / 60) * 100), 0), 100)
 }
 
+const cargarVariadoresTodasLasZonas = async () => {
+  const zonasBackend = zonas.value
+
+  if (zonasBackend.length === 0) {
+    variadoresFuente.value = []
+
+    return
+  }
+
+  const resultados = await Promise.allSettled(
+    zonasBackend.map((zona) => api.get(`/zonas/${zona.id}/variadores`)),
+  )
+
+  const acumulados: any[] = []
+
+  for (const resultado of resultados) {
+    if (resultado.status !== 'fulfilled') {
+      continue
+    }
+
+    const data = resultado.value.data
+
+    if (!data?.ok) {
+      continue
+    }
+
+    if (Array.isArray(data.data)) {
+      acumulados.push(...data.data)
+    }
+  }
+
+  variadoresFuente.value = acumulados
+}
+
 const cargar = async () => {
-  if (!zonaSeleccionada.value) {
-    variadores.value = []
+  if (cargando.value) {
     return
   }
 
   cargando.value = true
 
   try {
-    const { data } = await api.get(`/zonas/${zonaSeleccionada.value}/variadores`)
-
-    if (data.ok) {
-      variadores.value = data.data ?? []
-    } else {
-      variadores.value = []
-    }
+    /*
+     * Temporalmente consultamos todas
+     * las zonas existentes porque la
+     * base de datos todavía puede tener
+     * Naves 1-14 distribuidas entre
+     * Zona A, B, C y D.
+     *
+     * Después las reorganizamos:
+     *
+     * Zona A -> impares
+     * Zona B -> pares
+     */
+    await cargarVariadoresTodasLasZonas()
   } catch (error) {
     console.error('Error cargando variadores:', error)
 
-    variadores.value = []
+    variadoresFuente.value = []
   } finally {
     cargando.value = false
   }
 }
 
 const cambiarZona = async () => {
-  if (!zonaSeleccionada.value) {
-    return
-  }
-
-  unirseAZona(zonaSeleccionada.value)
-
   await cargar()
 }
 
-let intervalo: ReturnType<typeof setInterval> | undefined
+const suscribirseAZonas = () => {
+  /*
+   * Mientras C y D sigan existiendo
+   * en el backend, también nos
+   * suscribimos a ellas.
+   *
+   * De esta manera no perdemos una
+   * actualización de una nave que
+   * todavía esté asociada a una zona
+   * antigua.
+   */
+  for (const zona of zonas.value) {
+    unirseAZona(zona.id)
+  }
+}
 
 onMounted(async () => {
   loadingStore.mostrar('Cargando variadores...')
@@ -530,11 +916,13 @@ onMounted(async () => {
   try {
     await invernaderosStore.cargarZonas()
 
-    zonaSeleccionada.value = zonas.value[0]?.id ?? 1
+    const primeraZona = zonaItems.value[0]
+
+    zonaSeleccionada.value = primeraZona?.id ?? null
 
     await cargar()
 
-    unirseAZona(zonaSeleccionada.value)
+    suscribirseAZonas()
 
     escuchar('estado-actualizado', cargar)
 
@@ -594,8 +982,8 @@ onUnmounted(() => {
 .page-title {
   margin: 0;
 
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 750;
   line-height: 1.25;
 
   letter-spacing: -0.02em;
@@ -604,9 +992,9 @@ onUnmounted(() => {
 .page-subtitle {
   margin: 4px 0 0;
 
-  font-size: 0.86rem;
+  font-size: 0.875rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgba(var(--v-theme-on-surface), 0.58);
 }
 
 .page-header__actions {
@@ -618,6 +1006,14 @@ onUnmounted(() => {
 
 .zone-selector {
   width: 220px;
+}
+
+.zone-selector :deep(.v-field__input) {
+  font-size: 0.84rem;
+}
+
+.zone-selector :deep(.v-field-label) {
+  font-size: 0.8rem;
 }
 
 .status-online {
@@ -637,19 +1033,21 @@ onUnmounted(() => {
   background: rgb(var(--v-theme-success));
 
   box-shadow: 0 0 0 4px rgba(var(--v-theme-success), 0.1);
+
+  animation: livePulse 1.8s ease-in-out infinite;
 }
 
 .summary-card {
   position: relative;
 
-  min-height: 116px;
+  min-height: 105px;
 
   display: flex;
   align-items: center;
 
-  gap: 15px;
+  gap: 13px;
 
-  padding: 18px;
+  padding: 16px;
 
   overflow: hidden;
 
@@ -657,8 +1055,7 @@ onUnmounted(() => {
 
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    box-shadow 0.2s ease;
 }
 
 .summary-card:hover {
@@ -668,16 +1065,40 @@ onUnmounted(() => {
 }
 
 .summary-card__icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
 
-  flex: 0 0 48px;
+  flex: 0 0 44px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 14px;
+  border-radius: 13px;
+}
+
+.summary-card__icon--primary {
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.09);
+}
+
+.summary-card__icon--success {
+  color: rgb(var(--v-theme-success));
+
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.summary-card__icon--warning {
+  color: rgb(var(--v-theme-warning));
+
+  background: rgba(var(--v-theme-warning), 0.1);
+}
+
+.summary-card__icon--error {
+  color: rgb(var(--v-theme-error));
+
+  background: rgba(var(--v-theme-error), 0.09);
 }
 
 .summary-card__info {
@@ -697,80 +1118,48 @@ onUnmounted(() => {
 .summary-card__value {
   margin-top: 2px;
 
-  font-size: 1.65rem;
+  font-size: 1.5rem;
   font-weight: 750;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .summary-card__description {
-  margin-top: 2px;
+  margin-top: 3px;
 
-  font-size: 0.69rem;
-
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 
-  color: rgba(var(--v-theme-on-surface), 0.48);
+  font-size: 0.72rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
-/* PRIMARY */
-
-.summary-card--primary .summary-card__icon {
-  color: rgb(var(--v-theme-primary));
-
-  background: rgba(var(--v-theme-primary), 0.09);
-}
-
-.summary-card--primary .summary-card__value {
-  color: rgb(var(--v-theme-primary));
-}
-
-/* SUCCESS */
-
-.summary-card--success .summary-card__icon {
-  color: rgb(var(--v-theme-success));
-
-  background: rgba(var(--v-theme-success), 0.09);
-}
-
-.summary-card--success .summary-card__value {
-  color: rgb(var(--v-theme-success));
-}
-
-/* WARNING */
-
-.summary-card--warning .summary-card__icon {
-  color: rgb(var(--v-theme-warning));
-
-  background: rgba(var(--v-theme-warning), 0.11);
-}
-
-.summary-card--warning .summary-card__value {
-  color: rgb(var(--v-theme-warning));
-}
-
-/* ERROR */
-
-.summary-card--error .summary-card__icon {
-  color: rgb(var(--v-theme-error));
-
-  background: rgba(var(--v-theme-error), 0.09);
-}
-
-.summary-card--error .summary-card__value {
-  color: rgb(var(--v-theme-error));
-}
-
-.summary-alert {
+.summary-card__accent {
   position: absolute;
 
-  top: 22px;
+  top: 21px;
   right: 0;
-  bottom: 22px;
+  bottom: 21px;
 
-  width: 4px;
+  width: 3px;
 
-  border-radius: 6px 0 0 6px;
+  border-radius: 4px 0 0 4px;
+}
 
+.summary-card__accent--primary {
+  background: rgb(var(--v-theme-primary));
+}
+
+.summary-card__accent--success {
+  background: rgb(var(--v-theme-success));
+}
+
+.summary-card__accent--warning {
+  background: rgb(var(--v-theme-warning));
+}
+
+.summary-card__accent--error {
   background: rgb(var(--v-theme-error));
 }
 
@@ -781,7 +1170,7 @@ onUnmounted(() => {
 }
 
 .panel-header {
-  min-height: 82px;
+  min-height: 80px;
 
   display: flex;
   align-items: center;
@@ -789,21 +1178,21 @@ onUnmounted(() => {
 
   gap: 20px;
 
-  padding: 16px 20px;
+  padding: 15px 18px;
 }
 
 .panel-header__title {
   display: flex;
   align-items: center;
 
-  gap: 12px;
+  gap: 11px;
 }
 
 .panel-icon {
-  width: 38px;
-  height: 38px;
+  width: 39px;
+  height: 39px;
 
-  flex: 0 0 38px;
+  flex: 0 0 39px;
 
   display: flex;
   align-items: center;
@@ -824,9 +1213,9 @@ onUnmounted(() => {
 }
 
 .panel-header__title p {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
 
-  font-size: 0.72rem;
+  font-size: 0.74rem;
 
   color: rgba(var(--v-theme-on-surface), 0.52);
 }
@@ -848,7 +1237,7 @@ onUnmounted(() => {
 
   border-radius: 20px;
 
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
 
   color: rgb(var(--v-theme-success));
@@ -868,9 +1257,79 @@ onUnmounted(() => {
 }
 
 .update-info {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
 
   color: rgba(var(--v-theme-on-surface), 0.48);
+}
+
+.distribution-bar {
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 10px 18px;
+
+  background: rgba(var(--v-theme-primary), 0.025);
+}
+
+.distribution-bar__left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+.distribution-icon {
+  width: 36px;
+  height: 36px;
+
+  flex: 0 0 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+}
+
+.distribution-icon--a {
+  color: rgb(var(--v-theme-primary));
+
+  background: rgba(var(--v-theme-primary), 0.09);
+}
+
+.distribution-icon--b {
+  color: rgb(var(--v-theme-info));
+
+  background: rgba(var(--v-theme-info), 0.09);
+}
+
+.distribution-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.distribution-info span {
+  font-size: 0.72rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.distribution-info strong {
+  margin-top: 2px;
+
+  font-size: 0.8rem;
+  font-weight: 650;
+
+  letter-spacing: 0.01em;
 }
 
 .variadores-grid {
@@ -957,12 +1416,12 @@ onUnmounted(() => {
 }
 
 .variador-equipo {
+  min-width: 0;
+
   display: flex;
   align-items: center;
 
   gap: 10px;
-
-  min-width: 0;
 }
 
 .variador-equipo__icon {
@@ -987,7 +1446,7 @@ onUnmounted(() => {
 .variador-equipo__icon--warning {
   color: rgb(var(--v-theme-warning));
 
-  background: rgba(var(--v-theme-warning), 0.11);
+  background: rgba(var(--v-theme-warning), 0.1);
 }
 
 .variador-equipo__icon--error {
@@ -1021,9 +1480,9 @@ onUnmounted(() => {
 }
 
 .variador-id {
-  margin-top: 1px;
+  margin-top: 2px;
 
-  font-size: 0.67rem;
+  font-size: 0.72rem;
 
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
@@ -1031,7 +1490,7 @@ onUnmounted(() => {
 .estado-chip {
   flex-shrink: 0;
 
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
@@ -1052,7 +1511,7 @@ onUnmounted(() => {
 
   margin-bottom: 2px;
 
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 500;
 
   color: rgba(var(--v-theme-on-surface), 0.52);
@@ -1078,7 +1537,7 @@ onUnmounted(() => {
 .frequency-percentage {
   padding-bottom: 3px;
 
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 600;
 
   color: rgba(var(--v-theme-on-surface), 0.58);
@@ -1092,17 +1551,17 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
 
-  margin-top: 4px;
+  margin-top: 5px;
 
-  font-size: 0.58rem;
+  font-size: 0.7rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.38);
+  color: rgba(var(--v-theme-on-surface), 0.43);
 }
 
 .metrics-grid {
   display: grid;
 
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 8px;
 
@@ -1110,12 +1569,12 @@ onUnmounted(() => {
 }
 
 .metric-box {
+  min-width: 0;
+
   display: flex;
   align-items: center;
 
   gap: 9px;
-
-  min-width: 0;
 
   padding: 10px;
 
@@ -1149,27 +1608,27 @@ onUnmounted(() => {
 }
 
 .metric-box__label {
-  font-size: 0.61rem;
+  font-size: 0.7rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.48);
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .metric-box strong {
-  margin-top: 1px;
+  margin-top: 2px;
 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 
-  font-size: 0.79rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 .metric-box small {
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   font-weight: 500;
 
-  color: rgba(var(--v-theme-on-surface), 0.45);
+  color: rgba(var(--v-theme-on-surface), 0.47);
 }
 
 .variador-card__footer {
@@ -1180,6 +1639,7 @@ onUnmounted(() => {
   gap: 10px;
 
   margin-top: 15px;
+
   padding-top: 11px;
 
   border-top: 1px solid rgba(var(--v-border-color), 0.45);
@@ -1191,9 +1651,9 @@ onUnmounted(() => {
 
   gap: 6px;
 
-  font-size: 0.62rem;
+  font-size: 0.7rem;
 
-  color: rgba(var(--v-theme-on-surface), 0.48);
+  color: rgba(var(--v-theme-on-surface), 0.5);
 }
 
 .communication-status__dot {
@@ -1207,6 +1667,39 @@ onUnmounted(() => {
 
 .communication-status__dot--error {
   background: rgb(var(--v-theme-error));
+}
+
+.panel-footer {
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 8px 16px;
+}
+
+.panel-footer__status,
+.panel-footer__info {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: 0.72rem;
+
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.footer-dot {
+  width: 4px;
+  height: 4px;
+
+  border-radius: 50%;
+
+  background: rgba(var(--v-theme-on-surface), 0.32);
 }
 
 .empty-state {
@@ -1253,10 +1746,6 @@ onUnmounted(() => {
 
   color: rgba(var(--v-theme-on-surface), 0.52);
 }
-
-/* =========================================================
-   SKELETON
-========================================================= */
 
 .skeleton-card {
   min-height: 260px;
@@ -1318,13 +1807,24 @@ onUnmounted(() => {
 
 @media (max-width: 700px) {
   .variadores-page {
-    padding: 16px !important;
+    padding: 14px !important;
   }
 
   .page-header {
     flex-direction: column;
 
-    gap: 16px;
+    gap: 15px;
+  }
+
+  .page-header__left {
+    align-items: flex-start;
+  }
+
+  .page-header__icon {
+    width: 42px;
+    height: 42px;
+
+    flex-basis: 42px;
   }
 
   .page-header__actions {
@@ -1333,34 +1833,35 @@ onUnmounted(() => {
 
   .zone-selector {
     flex: 1;
+
     width: auto;
   }
 
   .page-title {
-    font-size: 1.25rem;
+    font-size: 1.22rem;
   }
 
   .page-subtitle {
-    font-size: 0.79rem;
+    font-size: 0.8rem;
   }
 
   .summary-card {
-    min-height: 105px;
+    min-height: 92px;
 
-    padding: 14px;
+    padding: 13px;
 
-    gap: 11px;
+    gap: 10px;
   }
 
   .summary-card__icon {
-    width: 42px;
-    height: 42px;
+    width: 39px;
+    height: 39px;
 
-    flex-basis: 42px;
+    flex-basis: 39px;
   }
 
   .summary-card__value {
-    font-size: 1.45rem;
+    font-size: 1.3rem;
   }
 
   .summary-card__description {
@@ -1369,10 +1870,28 @@ onUnmounted(() => {
 
   .panel-header {
     align-items: flex-start;
+
+    padding: 13px 14px;
   }
 
   .panel-header__status {
     display: none;
+  }
+
+  .distribution-bar {
+    padding: 10px 14px;
+  }
+
+  .distribution-bar__right {
+    display: none;
+  }
+
+  .variadores-grid {
+    padding: 12px !important;
+  }
+
+  .panel-footer {
+    padding: 8px 13px;
   }
 }
 
@@ -1393,7 +1912,11 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: flex-start;
 
-    gap: 8px;
+    gap: 7px;
+  }
+
+  .distribution-info strong {
+    font-size: 0.72rem;
   }
 
   .variador-card__header {
@@ -1406,6 +1929,13 @@ onUnmounted(() => {
 
   .metrics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .panel-footer {
+    align-items: flex-start;
+    flex-direction: column;
+
+    gap: 5px;
   }
 }
 </style>
