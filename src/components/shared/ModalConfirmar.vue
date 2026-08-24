@@ -47,7 +47,7 @@
 
           <div class="target-card__content">
             <span>
-              {{ esAccionZona ? 'Zona seleccionada' : 'Galpón seleccionado' }}
+              {{ esAccionZona ? 'Zona seleccionada' : 'Nave seleccionada' }}
             </span>
 
             <strong>
@@ -77,7 +77,7 @@
             <strong> Esta acción afecta a toda la zona </strong>
 
             <span>
-              El comando será enviado a todos los galpones disponibles que puedan recibir órdenes
+              El comando será enviado a todas las naves disponibles que puedan recibir órdenes
               remotas.
             </span>
           </div>
@@ -158,8 +158,8 @@ const accionInfo = computed(() => {
       iconoBoton: 'mdi-arrow-up',
       titulo: 'Confirmar apertura',
       descripcion: 'Estás a punto de enviar una orden de apertura.',
-      mensaje: '¿Deseas abrir este galpón?',
-      boton: 'Abrir galpón',
+      mensaje: '¿Deseas abrir esta nave?',
+      boton: 'Abrir nave',
       accionLabel: 'Abrir',
     }
   }
@@ -171,8 +171,8 @@ const accionInfo = computed(() => {
       iconoBoton: 'mdi-arrow-down',
       titulo: 'Confirmar cierre',
       descripcion: 'Estás a punto de enviar una orden de cierre.',
-      mensaje: '¿Deseas cerrar este galpón?',
-      boton: 'Cerrar galpón',
+      mensaje: '¿Deseas cerrar esta nave?',
+      boton: 'Cerrar nave',
       accionLabel: 'Cerrar',
     }
   }
@@ -183,8 +183,8 @@ const accionInfo = computed(() => {
       icono: 'mdi-stop-circle-outline',
       iconoBoton: 'mdi-stop',
       titulo: 'Detener movimiento',
-      descripcion: 'Esta acción detendrá el movimiento actual del galpón.',
-      mensaje: '¿Deseas detener este galpón?',
+      descripcion: 'Esta acción detendrá el movimiento actual de la nave.',
+      mensaje: '¿Deseas detener esta nave?',
       boton: 'Detener',
       accionLabel: 'Detener',
     }
@@ -197,7 +197,7 @@ const accionInfo = computed(() => {
       iconoBoton: 'mdi-arrow-up',
       titulo: 'Abrir zona completa',
       descripcion: 'Se enviará una orden de apertura masiva.',
-      mensaje: '¿Deseas abrir todos los galpones de esta zona?',
+      mensaje: '¿Deseas abrir todas las naves de esta zona?',
       boton: 'Abrir toda la zona',
       accionLabel: 'Abrir todo',
     }
@@ -209,7 +209,7 @@ const accionInfo = computed(() => {
     iconoBoton: 'mdi-arrow-down',
     titulo: 'Cerrar zona completa',
     descripcion: 'Se enviará una orden de cierre masiva.',
-    mensaje: '¿Deseas cerrar todos los galpones de esta zona?',
+    mensaje: '¿Deseas cerrar todas las naves de esta zona?',
     boton: 'Cerrar toda la zona',
     accionLabel: 'Cerrar todo',
   }
