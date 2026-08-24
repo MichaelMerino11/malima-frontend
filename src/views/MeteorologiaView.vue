@@ -136,6 +136,24 @@
               </v-icon>
             </div>
 
+            <div class="semaforo">
+              <div
+                class="semaforo__luz"
+                :class="{ 'semaforo__luz--activa': estadoClima.semaforo === 'rojo' }"
+                style="background: #ef5350"
+              />
+              <div
+                class="semaforo__luz"
+                :class="{ 'semaforo__luz--activa': estadoClima.semaforo === 'amarillo' }"
+                style="background: #ffa726"
+              />
+              <div
+                class="semaforo__luz"
+                :class="{ 'semaforo__luz--activa': estadoClima.semaforo === 'verde' }"
+                style="background: #66bb6a"
+              />
+            </div>
+
             <div class="current-weather__temperature">
               <span> Temperatura actual </span>
 
@@ -621,50 +639,36 @@ const obtenerCondicionBackend = () => {
 const condicionDesdeBackend = (condicion: string) => {
   const valor = normalizarTexto(condicion)
 
-  if (valor.includes('torment')) {
+  if (valor.includes('torment'))
     return {
       texto: condicion,
       color: 'error',
       icono: 'mdi-weather-lightning-rainy',
+      semaforo: 'rojo',
     }
-  }
 
-  if (valor.includes('lluv')) {
-    return {
-      texto: condicion,
-      color: 'info',
-      icono: 'mdi-weather-pouring',
-    }
-  }
+  if (valor.includes('lluv'))
+    return { texto: condicion, color: 'info', icono: 'mdi-weather-pouring', semaforo: 'rojo' }
 
-  if (valor.includes('parcial')) {
+  if (valor.includes('parcial'))
     return {
       texto: condicion,
       color: 'info',
       icono: 'mdi-weather-partly-cloudy',
+      semaforo: 'amarillo',
     }
-  }
 
-  if (valor.includes('nubl')) {
-    return {
-      texto: condicion,
-      color: 'primary',
-      icono: 'mdi-weather-cloudy',
-    }
-  }
+  if (valor.includes('nubl'))
+    return { texto: condicion, color: 'primary', icono: 'mdi-weather-cloudy', semaforo: 'amarillo' }
 
-  if (valor.includes('sol') || valor.includes('despej')) {
-    return {
-      texto: condicion,
-      color: 'warning',
-      icono: 'mdi-weather-sunny',
-    }
-  }
+  if (valor.includes('sol') || valor.includes('despej'))
+    return { texto: condicion, color: 'warning', icono: 'mdi-weather-sunny', semaforo: 'verde' }
 
   return {
     texto: condicion,
     color: 'primary',
     icono: 'mdi-weather-partly-cloudy',
+    semaforo: 'amarillo',
   }
 }
 
@@ -674,6 +678,7 @@ const estadoClima = computed(() => {
       texto: 'Sin datos',
       color: 'primary',
       icono: 'mdi-help-circle-outline',
+      semaforo: 'amarillo',
     }
   }
 
@@ -706,23 +711,16 @@ const estadoClima = computed(() => {
       texto: 'Viento fuerte',
       color: 'warning',
       icono: 'mdi-weather-windy',
+      semaforo: 'rojo',
     }
   }
 
   if (lluvia >= 75) {
-    return {
-      texto: 'Lluvioso',
-      color: 'info',
-      icono: 'mdi-weather-pouring',
-    }
+    return { texto: 'Lluvioso', color: 'info', icono: 'mdi-weather-pouring', semaforo: 'rojo' }
   }
 
   if (lluvia >= 50) {
-    return {
-      texto: 'Nublado',
-      color: 'primary',
-      icono: 'mdi-weather-cloudy',
-    }
+    return { texto: 'Nublado', color: 'primary', icono: 'mdi-weather-cloudy', semaforo: 'amarillo' }
   }
 
   if (lluvia >= 25 || humedad >= 85) {
@@ -730,22 +728,15 @@ const estadoClima = computed(() => {
       texto: 'Parcialmente nublado',
       color: 'info',
       icono: 'mdi-weather-partly-cloudy',
+      semaforo: 'amarillo',
     }
   }
 
   if (radiacion >= 400) {
-    return {
-      texto: 'Soleado',
-      color: 'warning',
-      icono: 'mdi-weather-sunny',
-    }
+    return { texto: 'Soleado', color: 'warning', icono: 'mdi-weather-sunny', semaforo: 'verde' }
   }
 
-  return {
-    texto: 'Despejado',
-    color: 'primary',
-    icono: 'mdi-weather-sunset',
-  }
+  return { texto: 'Despejado', color: 'primary', icono: 'mdi-weather-sunset', semaforo: 'verde' }
 })
 
 const recomendacion = computed(() => {
@@ -2245,5 +2236,30 @@ onUnmounted(() => {
   .card-header {
     align-items: flex-start;
   }
+}
+
+.semaforo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 7px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.semaforo__luz {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  opacity: 0.12;
+  transition:
+    opacity 0.8s ease,
+    box-shadow 0.8s ease;
+}
+
+.semaforo__luz--activa {
+  opacity: 1;
 }
 </style>

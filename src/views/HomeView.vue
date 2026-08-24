@@ -130,6 +130,24 @@
                 </v-icon>
               </div>
 
+              <div class="semaforo">
+                <div
+                  class="semaforo__luz"
+                  :class="{ 'semaforo__luz--activa': condicionClima.semaforo === 'rojo' }"
+                  style="background: #ef5350"
+                />
+                <div
+                  class="semaforo__luz"
+                  :class="{ 'semaforo__luz--activa': condicionClima.semaforo === 'amarillo' }"
+                  style="background: #ffa726"
+                />
+                <div
+                  class="semaforo__luz"
+                  :class="{ 'semaforo__luz--activa': condicionClima.semaforo === 'verde' }"
+                  style="background: #66bb6a"
+                />
+              </div>
+
               <div class="weather-temperature">
                 <span> Temperatura actual </span>
 
@@ -720,57 +738,57 @@ const obtenerCondicionBackend = () => {
 
 const obtenerConfigCondicion = (texto: string) => {
   const normalizado = normalizarTexto(texto)
-
   if (normalizado.includes('torment')) {
     return {
       texto,
       descripcion: 'Condiciones de tormenta',
       icono: 'mdi-weather-lightning-rainy',
       color: 'error',
+      semaforo: 'rojo',
     }
   }
-
   if (normalizado.includes('lluv')) {
     return {
       texto,
       descripcion: 'Precipitaciones presentes',
       icono: 'mdi-weather-pouring',
       color: 'info',
+      semaforo: 'rojo',
     }
   }
-
   if (normalizado.includes('nubl')) {
     return {
       texto,
       descripcion: 'Cobertura nubosa',
       icono: 'mdi-weather-cloudy',
       color: 'neutral',
+      semaforo: 'amarillo',
     }
   }
-
   if (normalizado.includes('parcial')) {
     return {
       texto,
       descripcion: 'Nubosidad variable',
       icono: 'mdi-weather-partly-cloudy',
       color: 'info',
+      semaforo: 'amarillo',
     }
   }
-
   if (normalizado.includes('sol') || normalizado.includes('despej')) {
     return {
       texto,
       descripcion: 'Condiciones despejadas',
       icono: 'mdi-weather-sunny',
       color: 'warning',
+      semaforo: 'verde',
     }
   }
-
   return {
     texto,
     descripcion: 'Condición registrada por el sensor',
     icono: 'mdi-weather-partly-cloudy',
     color: 'primary',
+    semaforo: 'amarillo',
   }
 }
 
@@ -778,12 +796,10 @@ const condicionClima = computed(() => {
   if (!meteo.value) {
     return {
       texto: 'Sin información',
-
       descripcion: 'No hay datos meteorológicos',
-
       icono: 'mdi-weather-cloudy-alert',
-
       color: 'neutral',
+      semaforo: 'amarillo',
     }
   }
 
@@ -802,59 +818,49 @@ const condicionClima = computed(() => {
   if (lluvia >= 75) {
     return {
       texto: 'Lluvioso',
-
       descripcion: 'Alta probabilidad de lluvia',
-
       icono: 'mdi-weather-pouring',
-
       color: 'info',
+      semaforo: 'rojo',
     }
   }
 
   if (lluvia >= 50) {
     return {
       texto: 'Nublado',
-
       descripcion: 'Condiciones mayormente nubladas',
-
       icono: 'mdi-weather-cloudy',
-
       color: 'neutral',
+      semaforo: 'amarillo',
     }
   }
 
   if (lluvia >= 25 || humedad >= 85) {
     return {
       texto: 'Parcialmente nublado',
-
       descripcion: 'Nubosidad variable',
-
       icono: 'mdi-weather-partly-cloudy',
-
       color: 'info',
+      semaforo: 'amarillo',
     }
   }
 
   if (radiacion >= 400) {
     return {
       texto: 'Soleado',
-
       descripcion: 'Condiciones despejadas',
-
       icono: 'mdi-weather-sunny',
-
       color: 'warning',
+      semaforo: 'verde',
     }
   }
 
   return {
     texto: 'Despejado',
-
     descripcion: 'Condiciones estables',
-
     icono: 'mdi-weather-sunset',
-
     color: 'primary',
+    semaforo: 'verde',
   }
 })
 
@@ -2142,6 +2148,43 @@ onUnmounted(() => {
   animation: spin 1.5s linear infinite;
 }
 
+.semaforo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.semaforo__luz {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  opacity: 0.15;
+  transition:
+    opacity 0.6s ease,
+    box-shadow 0.6s ease;
+}
+
+.semaforo__luz--activa {
+  opacity: 1;
+}
+
+@keyframes semaforoGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 2px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 16px 6px currentColor;
+    opacity: 0.85;
+  }
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -2348,6 +2391,44 @@ onUnmounted(() => {
 
   .event-item__top {
     align-items: flex-start;
+  }
+}
+
+.semaforo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.semaforo__luz {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  opacity: 0.15;
+  transition:
+    opacity 0.6s ease,
+    box-shadow 0.6s ease;
+}
+
+.semaforo__luz--activa {
+  opacity: 1;
+  animation: semaforoGlow 2s ease-in-out infinite;
+}
+
+@keyframes semaforoGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 2px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 16px 6px currentColor;
+    opacity: 0.85;
   }
 }
 
