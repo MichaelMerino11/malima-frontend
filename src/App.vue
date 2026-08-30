@@ -352,6 +352,14 @@
           @click="cerrarDrawerMobile"
         />
 
+        <!-- <v-list-item
+          prepend-icon="mdi-domain"
+          title="Visualización"
+          to="/visualizacion"
+          rounded="lg"
+          @click="cerrarDrawerMobile"
+        /> -->
+
         <v-list-item
           v-if="authStore.isAdmin"
           prepend-icon="mdi-cog-outline"

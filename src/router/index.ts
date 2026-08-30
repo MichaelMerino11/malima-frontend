@@ -79,6 +79,12 @@ const router = createRouter({
       name: 'variadores',
       component: () => import('../views/VariadoresView.vue'),
     },
+    {
+      path: '/visualizacion',
+      name: 'visualizacion',
+      component: () => import('../views/VisualizacionView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
