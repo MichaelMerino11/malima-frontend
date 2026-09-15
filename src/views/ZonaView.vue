@@ -1064,7 +1064,10 @@ const enviarComando = (
        * del equipo, no el ID virtual
        * de Zona A/B.
        */
-      const res = await store.enviarComando(naveId, accion)
+      const grupoId = Number(nave.grupo_id)
+      const res = grupoId
+        ? await store.enviarComandoGrupo(grupoId, accion)
+        : await store.enviarComando(naveId, accion)
 
       if (res.ok) {
         mostrarSnackbar(`Comando '${accion}' enviado a ${nombreNave(nave)}`)

@@ -77,6 +77,19 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
     }
   }
 
+  const enviarComandoGrupo = async (grupo_id: number, accion: 'abrir' | 'cerrar' | 'detener') => {
+    try {
+      const { data } = await api.post(`/control/grupo/${grupo_id}`, {
+        accion,
+        modo_origen: 'remoto',
+      })
+      return data
+    } catch (e) {
+      error.value = 'Error enviando comando al grupo'
+      return { ok: false }
+    }
+  }
+
   const enviarComandoZona = async (zona_id: number, accion: 'abrir' | 'cerrar' | 'detener') => {
     try {
       const { data } = await api.post(`/control/zona/${zona_id}`, {
@@ -107,6 +120,7 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
     cargarZonas,
     cargarEstadoZona,
     enviarComando,
+    enviarComandoGrupo,
     enviarComandoZona,
     cambiarModo,
   }
