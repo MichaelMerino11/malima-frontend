@@ -480,12 +480,156 @@
       </v-row>
     </template>
 
+    <!-- SEPARADOR VISUAL -->
+    <v-divider class="my-6" />
+
+    <!-- SECCIÓN CONFIGURACIÓN DE LLUVIA -->
+    <v-card rounded="xl" elevation="0" class="rain-config-card">
+      <div class="rain-config-card__header">
+        <div class="rain-config-card__title">
+          <div class="section-icon section-icon--info">
+            <v-icon size="21"> mdi-tune </v-icon>
+          </div>
+          <div>
+            <h2>Configuración de lluvia</h2>
+            <p>Parámetros que controlan la protección meteorológica automática del PLC</p>
+          </div>
+        </div>
+        <v-chip color="info" variant="tonal" size="small">
+          <v-icon start size="15"> mdi-chip </v-icon>
+          PLC1
+        </v-chip>
+      </div>
+      <v-divider />
+      <div class="rain-config-notice">
+        <div class="rain-config-notice__icon">
+          <v-icon size="19"> mdi-information-outline </v-icon>
+        </div>
+        <div>
+          <strong>Configuración operativa sensible</strong>
+          <span
+            >Estos parámetros afectan la lógica automática de cierre y reapertura de las naves por
+            lluvia. El PLC ejecuta la protección de forma autónoma.</span
+          >
+        </div>
+      </div>
+      <div class="rain-config-grid">
+        <div class="rain-config-item">
+          <div class="rain-config-item__header">
+            <div class="rain-config-item__icon rain-config-item__icon--primary">
+              <v-icon size="19"> mdi-water-alert-outline </v-icon>
+            </div>
+            <div>
+              <strong>Umbral de lluvia</strong>
+              <span>MW34 — Valor RAW del sensor</span>
+            </div>
+          </div>
+          <v-text-field
+            v-model.number="lluviaConfig.umbral_raw"
+            type="number"
+            :min="1"
+            :max="32766"
+            suffix="RAW"
+            density="comfortable"
+            variant="outlined"
+            rounded="lg"
+            hide-details
+            prepend-inner-icon="mdi-water-alert-outline"
+            class="rain-config-input"
+          />
+          <span class="rain-config-hint">Rango: 1 — 32766 RAW</span>
+        </div>
+        <div class="rain-config-item">
+          <div class="rain-config-item__header">
+            <div class="rain-config-item__icon rain-config-item__icon--info">
+              <v-icon size="19"> mdi-timer-outline </v-icon>
+            </div>
+            <div>
+              <strong>Confirmación de lluvia</strong>
+              <span>MW35 — Tiempo continuo sobre umbral</span>
+            </div>
+          </div>
+          <v-text-field
+            v-model.number="lluviaConfig.confirmacion_min"
+            type="number"
+            :min="0.017"
+            :max="166.65"
+            :step="0.5"
+            suffix="min"
+            density="comfortable"
+            variant="outlined"
+            rounded="lg"
+            hide-details
+            prepend-inner-icon="mdi-timer-outline"
+            class="rain-config-input"
+          />
+          <span class="rain-config-hint"
+            >{{ Math.round(lluviaConfig.confirmacion_min * 60) }} s — Rango: 1 — 9999 s</span
+          >
+        </div>
+        <div class="rain-config-item">
+          <div class="rain-config-item__header">
+            <div class="rain-config-item__icon rain-config-item__icon--success">
+              <v-icon size="19"> mdi-weather-sunny-alert </v-icon>
+            </div>
+            <div>
+              <strong>Tiempo seco para reapertura</strong>
+              <span>MW36 — Tiempo continuo bajo umbral</span>
+            </div>
+          </div>
+          <v-text-field
+            v-model.number="lluviaConfig.seco_min"
+            type="number"
+            :min="0.017"
+            :max="166.65"
+            :step="0.5"
+            suffix="min"
+            density="comfortable"
+            variant="outlined"
+            rounded="lg"
+            hide-details
+            prepend-inner-icon="mdi-weather-sunny-alert"
+            class="rain-config-input"
+          />
+          <span class="rain-config-hint"
+            >{{ Math.round(lluviaConfig.seco_min * 60) }} s — Rango: 1 — 9999 s</span
+          >
+        </div>
+      </div>
+      <div class="rain-config-actions">
+        <div
+          v-if="lluviaConfigEstado.mensaje"
+          class="rain-config-feedback"
+          :class="`rain-config-feedback--${lluviaConfigEstado.color}`"
+        >
+          <v-icon size="18">
+            {{
+              lluviaConfigEstado.color === 'success'
+                ? 'mdi-check-circle-outline'
+                : 'mdi-alert-circle-outline'
+            }}
+          </v-icon>
+          <span>{{ lluviaConfigEstado.mensaje }}</span>
+        </div>
+        <v-btn
+          color="info"
+          variant="tonal"
+          rounded="lg"
+          prepend-icon="mdi-content-save-outline"
+          :loading="guardandoLluvia"
+          @click="guardarConfigLluvia"
+        >
+          Guardar configuración
+        </v-btn>
+      </div>
+    </v-card>
+
     <ModalExportar v-model="modalExportar" tipo="meteorologia" :datos="historial" />
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -1106,6 +1250,59 @@ const cargar = async () => {
     console.error('Error cargando meteorología:', error)
   } finally {
     actualizando.value = false
+  }
+}
+
+// --- Configuración de lluvia ---
+const lluviaConfig = reactive({
+  umbral_raw: 3,
+  confirmacion_min: 0.5,   // 30s
+  seco_min: 10,            // 600s
+})
+
+const guardandoLluvia = ref(false)
+const lluviaConfigEstado = reactive({ mensaje: '', color: 'success' })
+
+const guardarConfigLluvia = async () => {
+  const tiempo_confirmacion_s = Math.round(lluviaConfig.confirmacion_min * 60)
+  const tiempo_seco_s = Math.round(lluviaConfig.seco_min * 60)
+
+  if (lluviaConfig.umbral_raw < 1 || lluviaConfig.umbral_raw > 32766) {
+    lluviaConfigEstado.mensaje = 'Umbral debe estar entre 1 y 32766 RAW'
+    lluviaConfigEstado.color = 'error'
+    return
+  }
+  if (tiempo_confirmacion_s < 1 || tiempo_confirmacion_s > 9999) {
+    lluviaConfigEstado.mensaje = 'Confirmación debe estar entre 1 y 9999 segundos'
+    lluviaConfigEstado.color = 'error'
+    return
+  }
+  if (tiempo_seco_s < 1 || tiempo_seco_s > 9999) {
+    lluviaConfigEstado.mensaje = 'Tiempo seco debe estar entre 1 y 9999 segundos'
+    lluviaConfigEstado.color = 'error'
+    return
+  }
+
+  guardandoLluvia.value = true
+  lluviaConfigEstado.mensaje = ''
+  try {
+    const { data } = await api.post('/control/meteorologia', {
+      lluvia_umbral_raw: lluviaConfig.umbral_raw,
+      tiempo_confirmacion_lluvia_s: tiempo_confirmacion_s,
+      tiempo_seco_reapertura_s: tiempo_seco_s,
+    })
+    if (data.ok) {
+      lluviaConfigEstado.mensaje = `Configuración aplicada — CMD ${data.command_id}`
+      lluviaConfigEstado.color = 'success'
+    } else {
+      lluviaConfigEstado.mensaje = data.mensaje ?? 'Error al guardar'
+      lluviaConfigEstado.color = 'error'
+    }
+  } catch {
+    lluviaConfigEstado.mensaje = 'Error de comunicación con el servidor'
+    lluviaConfigEstado.color = 'error'
+  } finally {
+    guardandoLluvia.value = false
   }
 }
 
@@ -2261,5 +2458,193 @@ onUnmounted(() => {
 
 .semaforo__luz--activa {
   opacity: 1;
+}
+
+.rain-config-card {
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.rain-config-card__header {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 18px;
+}
+
+.rain-config-card__title {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.rain-config-card__title h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.rain-config-card__title p {
+  margin: 3px 0 0;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.section-icon--info {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: rgb(var(--v-theme-info));
+  background: rgba(var(--v-theme-info), 0.09);
+}
+
+.rain-config-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 16px 0;
+  padding: 11px 13px;
+  border-radius: 12px;
+  color: rgb(var(--v-theme-info));
+  background: rgba(var(--v-theme-info), 0.065);
+}
+
+.rain-config-notice__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(var(--v-theme-info), 0.1);
+}
+
+.rain-config-notice > div:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.rain-config-notice strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.rain-config-notice span {
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+.rain-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.rain-config-item {
+  padding: 15px;
+  border: 1px solid rgba(var(--v-border-color), 0.6);
+  border-radius: 14px;
+  background: rgba(var(--v-theme-on-surface), 0.018);
+}
+
+.rain-config-item__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.rain-config-item__icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.rain-config-item__icon--primary {
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.09);
+}
+
+.rain-config-item__icon--info {
+  color: rgb(var(--v-theme-info));
+  background: rgba(var(--v-theme-info), 0.09);
+}
+
+.rain-config-item__icon--success {
+  color: rgb(var(--v-theme-success));
+  background: rgba(var(--v-theme-success), 0.09);
+}
+
+.rain-config-item__header > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rain-config-item__header strong {
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.rain-config-item__header span {
+  margin-top: 3px;
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: rgba(var(--v-theme-on-surface), 0.48);
+}
+
+.rain-config-input {
+  width: 100%;
+}
+
+.rain-config-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: rgba(var(--v-theme-on-surface), 0.46);
+}
+
+.rain-config-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid rgba(var(--v-border-color), 0.5);
+}
+
+.rain-config-feedback {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 550;
+}
+
+.rain-config-feedback--success {
+  color: rgb(var(--v-theme-success));
+}
+.rain-config-feedback--error {
+  color: rgb(var(--v-theme-error));
+}
+
+@media (max-width: 959px) {
+  .rain-config-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
