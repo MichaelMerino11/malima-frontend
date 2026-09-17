@@ -625,14 +625,8 @@ const zonaActualNombre = computed(() => {
 })
 
 const distribucionActual = computed(() => {
-  if (zonaActualLetra.value === 'A') {
-    return 'Naves 1 · 3 · 5 · 7 · 9 · 11 · 13'
-  }
-
-  if (zonaActualLetra.value === 'B') {
-    return 'Naves 2 · 4 · 6 · 8 · 10 · 12 · 14'
-  }
-
+  if (zonaActualLetra.value === 'A') return 'Naves 1A · 2A · 3A · 4A · 5A · 6A · 7A'
+  if (zonaActualLetra.value === 'B') return 'Naves 1B · 2B · 3B · 4B · 5B · 6B · 7B'
   return 'Sin distribución definida'
 })
 
@@ -780,31 +774,26 @@ const navesFuente = computed(() => {
 
 const naves = computed(() => {
   const letra = zonaActualLetra.value
-
-  if (!letra) {
-    return []
-  }
-
+  if (!letra) return []
   return navesFuente.value
     .filter((nave) => {
-      const numero = Number(nave.__numero_nave)
-
-      if (letra === 'A') {
-        return numero % 2 !== 0
-      }
-
-      return numero % 2 === 0
+      const nombre = String(nave?.nombre ?? '')
+      return nombre.includes(letra)
     })
     .sort((a, b) => Number(a.__numero_nave) - Number(b.__numero_nave))
 })
 
 const nombreNave = (nave: any) => {
+  const nombre = String(nave?.__numero_nave ?? nave?.nombre ?? '').trim()
+  if (nave?.nombre && String(nave.nombre).trim()) {
+    return String(nave.nombre)
+      .trim()
+      .replace(/galp[oó]n/gi, 'Nave')
+  }
   const numero = Number(nave?.__numero_nave ?? numeroNave(nave))
-
   if (Number.isFinite(numero) && numero >= NAVE_MIN && numero <= NAVE_MAX) {
     return `Nave ${numero}`
   }
-
   return 'Nave sin identificar'
 }
 
