@@ -643,23 +643,29 @@ const verificarAlertas = async () => {
       const m = meteo.data.data.meteorologia
 
       if ((m.probabilidad_lluvia ?? 0) > 60) {
-        notifStore.agregar({
-          tipo: 'warning',
-          titulo: `Alerta de lluvia — ${zona.nombre}`,
-          mensaje:
-            `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. ` +
-            'Considere cerrar los galpones.',
-        })
+        const yaExiste = notifStore.notificaciones.some(
+          (n) => n.titulo.includes('lluvia') && n.titulo.includes(zona.nombre),
+        )
+        if (!yaExiste) {
+          notifStore.agregar({
+            tipo: 'warning',
+            titulo: `Alerta de lluvia — ${zona.nombre}`,
+            mensaje: `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. Considere cerrar las naves.`,
+          })
+        }
       }
 
       if (Number(m.velocidad_viento ?? 0) > 40) {
-        notifStore.agregar({
-          tipo: 'warning',
-          titulo: `Viento fuerte — ${zona.nombre}`,
-          mensaje:
-            `Velocidad del viento: ${m.velocidad_viento} km/h. ` +
-            'Se recomienda cerrar los galpones.',
-        })
+        const yaExiste = notifStore.notificaciones.some(
+          (n) => n.titulo.includes('Viento') && n.titulo.includes(zona.nombre),
+        )
+        if (!yaExiste) {
+          notifStore.agregar({
+            tipo: 'warning',
+            titulo: `Viento fuerte — ${zona.nombre}`,
+            mensaje: `Velocidad del viento: ${m.velocidad_viento} km/h. Se recomienda cerrar las naves.`,
+          })
+        }
       }
     }
   } catch (error) {
