@@ -238,8 +238,8 @@
               <strong>
                 {{
                   letraZona(zona) === 'A'
-                    ? '1 · 3 · 5 · 7 · 9 · 11 · 13'
-                    : '2 · 4 · 6 · 8 · 10 · 12 · 14'
+                    ? '1A · 2A · 3A · 4A · 5A · 6A · 7A'
+                    : '1B · 2B · 3B · 4B · 5B · 6B · 7B'
                 }}
               </strong>
             </div>
@@ -249,7 +249,7 @@
               variant="tonal"
               size="x-small"
             >
-              {{ letraZona(zona) === 'A' ? 'Impares' : 'Pares' }}
+              {{ letraZona(zona) === 'A' ? 'Naves A' : 'Naves B' }}
             </v-chip>
           </div>
 
@@ -473,18 +473,14 @@ const esNaveOperativa = (nave: any) => {
 }
 
 const nombreNave = (nave: any) => {
-  const numero = numeroNave(nave)
-
-  if (numero !== null) {
-    return `Nave ${numero}`
-  }
-
   const nombre = String(nave?.nombre ?? '').trim()
-
   if (nombre) {
     return nombre.replace(/galp[oó]n/gi, 'Nave')
   }
-
+  const numero = numeroNave(nave)
+  if (numero !== null) {
+    return `Nave ${numero}`
+  }
   return 'Nave'
 }
 
@@ -575,9 +571,8 @@ const zonasOperativas = computed(() => {
       nombre: 'Zona A',
 
       invernaderos: navesFuente.value.filter((nave) => {
-        const numero = numeroNave(nave)
-
-        return numero !== null && numero % 2 !== 0
+        const nombre = String(nave?.nombre ?? '')
+        return nombre.includes('A')
       }),
     })
   }
@@ -589,9 +584,8 @@ const zonasOperativas = computed(() => {
       nombre: 'Zona B',
 
       invernaderos: navesFuente.value.filter((nave) => {
-        const numero = numeroNave(nave)
-
-        return numero !== null && numero % 2 === 0
+        const nombre = String(nave?.nombre ?? '')
+        return nombre.includes('B')
       }),
     })
   }
