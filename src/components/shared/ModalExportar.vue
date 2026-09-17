@@ -571,6 +571,7 @@ const columnasMeteo: ColumnaExportacion[] = [
     key: 'probabilidad_lluvia',
     label: 'Prob. lluvia',
   },
+  { key: 'presion_atmosferica', label: 'Presión' },
 ]
 
 const columnasDisponibles = computed(() =>
@@ -821,6 +822,8 @@ const mapearFila = (dato: any): Record<string, any> => {
     radiacion_solar: dato.radiacion_solar,
 
     probabilidad_lluvia: dato.probabilidad_lluvia ?? 0,
+
+    presion_atmosferica: dato.presion_atmosferica ?? '—',
   }
 }
 
@@ -853,6 +856,8 @@ const iconoColumna = (key: string) => {
     radiacion_solar: 'mdi-white-balance-sunny',
 
     probabilidad_lluvia: 'mdi-weather-rainy',
+
+    presion_atmosferica: 'mdi-gauge',
   }
 
   return iconos[key] ?? 'mdi-table-column'
