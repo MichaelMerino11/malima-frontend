@@ -400,6 +400,18 @@
                     {{ Math.round(Number(item.probabilidad_lluvia ?? 0)) }}%
                   </v-chip>
                 </template>
+
+                <template #item.presion_atmosferica="{ item }">
+                  <div class="table-value">
+                    <v-icon size="16" color="purple"> mdi-gauge </v-icon>
+                    {{
+                      item.presion_atmosferica != null
+                        ? formatearNumero(item.presion_atmosferica)
+                        : '--'
+                    }}
+                    hPa
+                  </div>
+                </template>
               </v-data-table>
             </div>
           </v-card>
@@ -1141,30 +1153,12 @@ const cantidadAlertas = computed(() => {
 })
 
 const headersHistorial = [
-  {
-    title: 'Fecha',
-    key: 'registrado_at',
-  },
-
-  {
-    title: 'Temp.',
-    key: 'temperatura',
-  },
-
-  {
-    title: 'Humedad',
-    key: 'humedad',
-  },
-
-  {
-    title: 'Viento',
-    key: 'velocidad_viento',
-  },
-
-  {
-    title: 'Lluvia',
-    key: 'probabilidad_lluvia',
-  },
+  { title: 'Fecha', key: 'registrado_at' },
+  { title: 'Temp.', key: 'temperatura' },
+  { title: 'Humedad', key: 'humedad' },
+  { title: 'Viento', key: 'velocidad_viento' },
+  { title: 'Lluvia', key: 'probabilidad_lluvia' },
+  { title: 'Presión', key: 'presion_atmosferica' },
 ]
 
 const formatFecha = (fecha: string) => {
@@ -1256,8 +1250,8 @@ const cargar = async () => {
 // --- Configuración de lluvia ---
 const lluviaConfig = reactive({
   umbral_raw: 3,
-  confirmacion_min: 0.5,   // 30s
-  seco_min: 10,            // 600s
+  confirmacion_min: 0.5, // 30s
+  seco_min: 10, // 600s
 })
 
 const guardandoLluvia = ref(false)
