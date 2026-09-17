@@ -16,11 +16,9 @@
         color="primary"
       >
         <v-btn value="temperatura" size="small"> Temp. </v-btn>
-
+        <v-btn value="presion_atmosferica" size="small"> Presión </v-btn>
         <v-btn value="humedad" size="small"> Humedad </v-btn>
-
         <v-btn value="velocidad_viento" size="small"> Viento </v-btn>
-
         <v-btn value="radiacion_solar" size="small"> Radiación </v-btn>
       </v-btn-toggle>
     </v-card-title>
@@ -73,9 +71,15 @@ interface DatoMeteo {
   velocidad_viento: number
   radiacion_solar: number
   probabilidad_lluvia: number
+  presion_atmosferica: number
 }
 
-type MetricaKey = 'temperatura' | 'humedad' | 'velocidad_viento' | 'radiacion_solar'
+type MetricaKey =
+  | 'temperatura'
+  | 'humedad'
+  | 'velocidad_viento'
+  | 'radiacion_solar'
+  | 'presion_atmosferica'
 
 interface MetricaConfig {
   label: string
@@ -129,6 +133,13 @@ const config: Record<MetricaKey, MetricaConfig> = {
     color: '#F9A825',
     unidad: 'W/m²',
     decimales: 0,
+  },
+
+  presion_atmosferica: {
+    label: 'Presión',
+    color: '#7B1FA2',
+    unidad: 'hPa',
+    decimales: 1,
   },
 }
 
