@@ -173,9 +173,7 @@
               {{ zonaFiltroNombre ? zonaFiltroNombre : 'Zona A y Zona B' }}
             </strong>
 
-            <span>
-              {{ zonaFiltroNombre ? distribucionFiltro : '14 naves operativas' }}
-            </span>
+            <span> {{ zonaFiltroNombre ? distribucionFiltro : '14 naves operativas' }} </span>
           </div>
         </div>
 
@@ -493,14 +491,8 @@ const zonaFiltroNombre = computed(() => {
 })
 
 const distribucionFiltro = computed(() => {
-  if (zonaFiltroLetra.value === 'A') {
-    return 'Naves 1 · 3 · 5 · 7 · 9 · 11 · 13'
-  }
-
-  if (zonaFiltroLetra.value === 'B') {
-    return 'Naves 2 · 4 · 6 · 8 · 10 · 12 · 14'
-  }
-
+  if (zonaFiltroLetra.value === 'A') return 'Naves 1A · 2A · 3A · 4A · 5A · 6A · 7A'
+  if (zonaFiltroLetra.value === 'B') return 'Naves 1B · 2B · 3B · 4B · 5B · 6B · 7B'
   return ''
 })
 
@@ -576,36 +568,14 @@ const numeroNaveAlarma = (alarma: any): number | null => {
 }
 
 const letraZonaAlarma = (alarma: any): 'A' | 'B' | null => {
-  const numero = numeroNaveAlarma(alarma)
-
-  if (numero !== null) {
-    return numero % 2 !== 0 ? 'A' : 'B'
-  }
-
-  /*
-   * Intentamos resolver por zona_id
-   * utilizando únicamente A/B.
-   */
   if (alarma?.zona_id) {
     const zona = zonaItems.value.find((item: any) => Number(item.id) === Number(alarma.zona_id))
-
     const letra = obtenerLetraZona(zona)
-
-    if (letra) {
-      return letra
-    }
+    if (letra) return letra
   }
-
   const nombre = normalizarTexto(alarma?.zona_nombre)
-
-  if (nombre === 'a' || nombre.includes('zona a')) {
-    return 'A'
-  }
-
-  if (nombre === 'b' || nombre.includes('zona b')) {
-    return 'B'
-  }
-
+  if (nombre === 'a' || nombre.includes('zona a')) return 'A'
+  if (nombre === 'b' || nombre.includes('zona b')) return 'B'
   return null
 }
 

@@ -383,30 +383,6 @@
       class="pa-4 mt-4"
       style="border: 1px dashed rgba(var(--v-border-color), 0.5)"
     >
-      <p class="text-caption mb-3" style="color: rgba(var(--v-theme-on-surface), 0.5)">
-        Simulador (prueba)
-      </p>
-      <div class="d-flex flex-wrap gap-2">
-        <v-btn size="x-small" color="success" @click="simularEstado('abierto')"
-          >Todas abiertas</v-btn
-        >
-        <v-btn size="x-small" color="error" @click="simularEstado('cerrado')">Todas cerradas</v-btn>
-        <v-btn size="x-small" color="warning" @click="simularEstado('en_movimiento')"
-          >En movimiento</v-btn
-        >
-        <v-btn size="x-small" color="success" variant="outlined" @click="simularClima('soleado')"
-          >☀️ Soleado</v-btn
-        >
-        <v-btn size="x-small" color="warning" variant="outlined" @click="simularClima('nublado')"
-          >☁️ Nublado</v-btn
-        >
-        <v-btn size="x-small" color="error" variant="outlined" @click="simularClima('lluvia')"
-          >🌧️ Lluvia</v-btn
-        >
-        <v-btn size="x-small" color="info" variant="outlined" @click="simularClima('viento')"
-          >💨 Viento</v-btn
-        >
-      </div>
     </v-card>
   </v-container>
 </template>
@@ -494,18 +470,12 @@ const zonaActualNombre = computed(() => zonaActual.value?.nombre ?? 'Zona')
 
 const navesVista = computed(() => {
   const zona = zonas.value.find((item: any) => Number(item.id) === Number(zonaSeleccionada.value))
-
   const letra = obtenerLetraZona(zona)
-
-  if (!zona || !letra) {
-    return []
-  }
-
+  if (!zona || !letra) return []
   return (zona.invernaderos ?? [])
     .filter((nave: any) => {
-      const numero = Number(nave.numero)
-
-      return letra === 'A' ? numero % 2 !== 0 : numero % 2 === 0
+      const nombre = String(nave?.nombre ?? '')
+      return nombre.includes(letra)
     })
     .sort((a: any, b: any) => Number(a.numero) - Number(b.numero))
 })
@@ -825,7 +795,7 @@ const agregarEvento = (data: any) => {
       second: '2-digit',
     }),
 
-    nave: nave ? `Nave ${nave.numero ?? nave.id}` : `Nave ${naveId || '—'}`,
+    nave: nave ? String(nave.nombre ?? `Nave ${nave.numero ?? nave.id}`) : `Nave ${naveId || '—'}`,
 
     accion: String(accion),
 
@@ -923,19 +893,6 @@ onMounted(async () => {
     )
 
     intervalo = setInterval(cargar, 30000)
-
-    // PRUEBA TEMPORAL — borrar después
-    if (!meteo.value) {
-      meteo.value = {
-        temperatura: 26.5,
-        humedad: 68,
-        velocidad_viento: 12,
-        radiacion_solar: 420,
-        probabilidad_lluvia: 20,
-        presion_atmosferica: 1013,
-        registrado_at: new Date().toISOString(),
-      }
-    }
   } finally {
     loadingStore.ocultar()
   }
@@ -948,47 +905,6 @@ onUnmounted(() => {
     clearInterval(intervalo)
   }
 })
-
-const simularEstado = (estado: 'abierto' | 'cerrado' | 'en_movimiento') => {
-  for (const zona of zonas.value) {
-    for (const nave of (zona as any).invernaderos ?? []) {
-      nave.estado = estado
-    }
-  }
-}
-
-const simularClima = (tipo: string) => {
-  if (!meteo.value) {
-    meteo.value = {
-      temperatura: 26.5,
-      humedad: 68,
-      velocidad_viento: 12,
-      radiacion_solar: 420,
-      probabilidad_lluvia: 20,
-      presion_atmosferica: 1013,
-      registrado_at: new Date().toISOString(),
-    }
-  }
-  if (tipo === 'soleado') {
-    meteo.value.probabilidad_lluvia = 10
-    meteo.value.radiacion_solar = 500
-    meteo.value.velocidad_viento = 5
-  }
-  if (tipo === 'nublado') {
-    meteo.value.probabilidad_lluvia = 35
-    meteo.value.radiacion_solar = 100
-    meteo.value.velocidad_viento = 15
-  }
-  if (tipo === 'lluvia') {
-    meteo.value.probabilidad_lluvia = 80
-    meteo.value.radiacion_solar = 20
-    meteo.value.velocidad_viento = 5
-  }
-  if (tipo === 'viento') {
-    meteo.value.velocidad_viento = 55
-    meteo.value.probabilidad_lluvia = 20
-  }
-}
 </script>
 
 <style scoped>

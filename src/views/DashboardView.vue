@@ -798,7 +798,7 @@ const porcentajeAbiertos = (zona: any) => {
 }
 
 const descripcionDistribucion = (zona: any) => {
-  return letraZona(zona) === 'A' ? 'números impares' : 'números pares'
+  return letraZona(zona) === 'A' ? 'naves A' : 'naves B'
 }
 
 const abrirZona = async (zonaId: number) => {

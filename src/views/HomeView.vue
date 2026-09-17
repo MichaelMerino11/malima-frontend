@@ -624,9 +624,8 @@ const zonasOperativas = computed(() => {
       nombre: 'Zona A',
 
       invernaderos: navesFuente.value.filter((nave) => {
-        const numero = numeroNave(nave)
-
-        return numero !== null && numero % 2 !== 0
+        const nombre = String(nave?.nombre ?? '')
+        return nombre.includes('A')
       }),
     })
   }
@@ -638,9 +637,8 @@ const zonasOperativas = computed(() => {
       nombre: 'Zona B',
 
       invernaderos: navesFuente.value.filter((nave) => {
-        const numero = numeroNave(nave)
-
-        return numero !== null && numero % 2 === 0
+        const nombre = String(nave?.nombre ?? '')
+        return nombre.includes('B')
       }),
     })
   }

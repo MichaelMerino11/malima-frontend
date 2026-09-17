@@ -426,14 +426,8 @@ const zonaFiltroNombre = computed(() => {
 })
 
 const distribucionFiltro = computed(() => {
-  if (zonaFiltroLetra.value === 'A') {
-    return 'Naves 1 · 3 · 5 · 7 · 9 · 11 · 13'
-  }
-
-  if (zonaFiltroLetra.value === 'B') {
-    return 'Naves 2 · 4 · 6 · 8 · 10 · 12 · 14'
-  }
-
+  if (zonaFiltroLetra.value === 'A') return 'Naves 1A · 2A · 3A · 4A · 5A · 6A · 7A'
+  if (zonaFiltroLetra.value === 'B') return 'Naves 1B · 2B · 3B · 4B · 5B · 6B · 7B'
   return ''
 })
 
@@ -499,40 +493,22 @@ const numeroNaveEvento = (evento: any): number | null => {
 }
 
 const letraZonaEvento = (evento: any): 'A' | 'B' | null => {
-  const numero = numeroNaveEvento(evento)
-
-  if (numero !== null) {
-    return numero % 2 !== 0 ? 'A' : 'B'
+  if (evento?.zona_id) {
+    const zona = zonaItems.value.find((item: any) => Number(item.id) === Number(evento.zona_id))
+    const letra = obtenerLetraZona(zona)
+    if (letra) return letra
   }
-
   const nombre = normalizarTexto(evento?.zona_nombre)
-
-  if (nombre === 'a' || nombre.includes('zona a')) {
-    return 'A'
-  }
-
-  if (nombre === 'b' || nombre.includes('zona b')) {
-    return 'B'
-  }
-
+  if (nombre === 'a' || nombre.includes('zona a')) return 'A'
+  if (nombre === 'b' || nombre.includes('zona b')) return 'B'
   return null
 }
 
 const nombreNaveEvento = (evento: any) => {
-  const numero = numeroNaveEvento(evento)
-
-  if (numero !== null) {
-    return `Nave ${numero}`
-  }
-
   const nombre = String(
     evento?.invernadero_nombre ?? evento?.galpon_nombre ?? evento?.nave_nombre ?? '',
   ).trim()
-
-  if (nombre) {
-    return nombre.replace(/galp[oó]n/gi, 'Nave').replace(/invernadero/gi, 'Nave')
-  }
-
+  if (nombre) return nombre.replace(/galp[oó]n/gi, 'Nave').replace(/invernadero/gi, 'Nave')
   return 'Nave sin identificar'
 }
 
