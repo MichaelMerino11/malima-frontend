@@ -668,6 +668,22 @@ const verificarAlertas = async () => {
         }
       }
     }
+
+    // Verificar alarmas activas en BD
+    const alarmasRes = await api.get('/alarmas')
+    if (alarmasRes.data?.ok) {
+      const alarmasActivas = alarmasRes.data.data.filter((a: any) => a.estado === 'activa')
+      for (const alarma of alarmasActivas) {
+        const yaExiste = notifStore.notificaciones.some((n) => n.titulo.includes(String(alarma.id)))
+        if (!yaExiste) {
+          await notifStore.agregar({
+            tipo: 'error',
+            titulo: `Alarma #${alarma.id} — ${alarma.zona_nombre ?? 'Sistema'}`,
+            mensaje: alarma.mensaje ?? 'Alarma activa detectada en el sistema.',
+          })
+        }
+      }
+    }
   } catch (error) {
     console.error('Error verificando alertas:', error)
   }
