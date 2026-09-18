@@ -622,54 +622,75 @@ const cerrarDrawerMobile = () => {
 }
 
 const verificarAlertas = async () => {
-  if (!authStore.isAuthenticated) {
-    return
-  }
-
+  if (!authStore.isAuthenticated) return
   try {
     const { data } = await api.get('/zonas')
-
-    if (!data.ok) {
-      return
-    }
+    if (!data.ok) return
 
     for (const zona of data.data) {
+      // Meteorología
       const meteo = await api.get(`/tinker/ultimo-estado/${zona.id}`)
-
-      if (!meteo.data.ok || !meteo.data.data.meteorologia) {
-        continue
-      }
-
-      const m = meteo.data.data.meteorologia
-
-      if ((m.probabilidad_lluvia ?? 0) > 60) {
-        const yaExiste = notifStore.notificaciones.some(
-          (n) => n.titulo.includes('lluvia') && n.titulo.includes(zona.nombre),
-        )
-        if (!yaExiste) {
-          notifStore.agregar({
-            tipo: 'warning',
-            titulo: `Alerta de lluvia — ${zona.nombre}`,
-            mensaje: `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. Considere cerrar las naves.`,
-          })
+      if (meteo.data.ok && meteo.data.data.meteorologia) {
+        const m = meteo.data.data.meteorologia
+        if ((m.probabilidad_lluvia ?? 0) > 60) {
+          const yaExiste = notifStore.notificaciones.some(
+            (n) => n.titulo.includes('lluvia') && n.titulo.includes(zona.nombre),
+          )
+          if (!yaExiste) {
+            await notifStore.agregar({
+              tipo: 'warning',
+              titulo: `Alerta de lluvia — ${zona.nombre}`,
+              mensaje: `Probabilidad de lluvia: ${m.probabilidad_lluvia}%. Considere cerrar las naves.`,
+            })
+          }
+        }
+        if (Number(m.velocidad_viento ?? 0) > 40) {
+          const yaExiste = notifStore.notificaciones.some(
+            (n) => n.titulo.includes('Viento') && n.titulo.includes(zona.nombre),
+          )
+          if (!yaExiste) {
+            await notifStore.agregar({
+              tipo: 'warning',
+              titulo: `Viento fuerte — ${zona.nombre}`,
+              mensaje: `Velocidad del viento: ${m.velocidad_viento} km/h. Se recomienda cerrar las naves.`,
+            })
+          }
         }
       }
 
-      if (Number(m.velocidad_viento ?? 0) > 40) {
-        const yaExiste = notifStore.notificaciones.some(
-          (n) => n.titulo.includes('Viento') && n.titulo.includes(zona.nombre),
-        )
-        if (!yaExiste) {
-          notifStore.agregar({
-            tipo: 'warning',
-            titulo: `Viento fuerte — ${zona.nombre}`,
-            mensaje: `Velocidad del viento: ${m.velocidad_viento} km/h. Se recomienda cerrar las naves.`,
-          })
+      // Naves en modo local y en movimiento
+      const zonasData = await api.get(`/zonas/${zona.id}`)
+      if (zonasData.data?.ok) {
+        for (const nave of zonasData.data.data?.invernaderos ?? []) {
+          if (nave.modo === 'local') {
+            const yaExiste = notifStore.notificaciones.some(
+              (n) => n.titulo.includes('local') && n.titulo.includes(nave.nombre),
+            )
+            if (!yaExiste) {
+              await notifStore.agregar({
+                tipo: 'info',
+                titulo: `${nave.nombre} en modo local`,
+                mensaje: `${nave.nombre} está en modo local y no acepta comandos remotos desde la plataforma.`,
+              })
+            }
+          }
+          if (nave.estado === 'en_movimiento') {
+            const yaExiste = notifStore.notificaciones.some(
+              (n) => n.titulo.includes('movimiento') && n.titulo.includes(nave.nombre),
+            )
+            if (!yaExiste) {
+              await notifStore.agregar({
+                tipo: 'warning',
+                titulo: `${nave.nombre} en movimiento`,
+                mensaje: `${nave.nombre} lleva tiempo en movimiento. Verifique que la operación haya completado correctamente.`,
+              })
+            }
+          }
         }
       }
     }
 
-    // Verificar alarmas activas en BD
+    // Alarmas activas en BD
     const alarmasRes = await api.get('/alarmas')
     if (alarmasRes.data?.ok) {
       const alarmasActivas = alarmasRes.data.data.filter((a: any) => a.estado === 'activa')
