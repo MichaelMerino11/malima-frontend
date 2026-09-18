@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import api from '../api/axios'
 
 export interface Notificacion {
   id: number
@@ -12,47 +13,77 @@ export interface Notificacion {
 
 export const useNotificacionesStore = defineStore('notificaciones', () => {
   const notificaciones = ref<Notificacion[]>([])
-  let contador = 0
 
-  const agregar = (notif: Omit<Notificacion, 'id' | 'fecha' | 'leida'>) => {
-    notificaciones.value.unshift({
-      ...notif,
-      id: ++contador,
-      fecha: new Date(),
-      leida: false,
-    })
-
-    const campana = document.querySelector('.mdi-bell')
-    if (campana) {
-      campana.classList.add('bounce')
-      setTimeout(() => campana.classList.remove('bounce'), 500)
-    }
-
-    if (notificaciones.value.length > 20) {
-      notificaciones.value.pop()
+  const cargar = async () => {
+    try {
+      const { data } = await api.get('/notificaciones')
+      if (data.ok) {
+        notificaciones.value = data.data.map((n: any) => ({
+          ...n,
+          fecha: new Date(n.created_at),
+        }))
+      }
+    } catch (error) {
+      console.error('Error cargando notificaciones:', error)
     }
   }
 
-  const marcarLeida = (id: number) => {
-    const n = notificaciones.value.find((n) => n.id === id)
-    if (n) n.leida = true
+  const agregar = async (notif: Omit<Notificacion, 'id' | 'fecha' | 'leida'>) => {
+    try {
+      const { data } = await api.post('/notificaciones', {
+        tipo: notif.tipo,
+        titulo: notif.titulo,
+        mensaje: notif.mensaje,
+      })
+      if (data.ok) {
+        notificaciones.value.unshift({
+          ...data.data,
+          fecha: new Date(data.data.created_at),
+        })
+        const campana = document.querySelector('.mdi-bell')
+        if (campana) {
+          campana.classList.add('bounce')
+          setTimeout(() => campana.classList.remove('bounce'), 500)
+        }
+      }
+    } catch (error) {
+      console.error('Error agregando notificación:', error)
+    }
   }
 
-  const marcarTodasLeidas = () => {
-    notificaciones.value.forEach((n) => (n.leida = true))
+  const marcarLeida = async (id: number) => {
+    try {
+      await api.patch(`/notificaciones/${id}/leer`)
+      const n = notificaciones.value.find((n) => n.id === id)
+      if (n) n.leida = true
+    } catch (error) {
+      console.error('Error marcando notificación:', error)
+    }
   }
 
-  const eliminar = (id: number) => {
-    notificaciones.value = notificaciones.value.filter((n) => n.id !== id)
+  const marcarTodasLeidas = async () => {
+    try {
+      await api.patch('/notificaciones/leer-todas')
+      notificaciones.value.forEach((n) => (n.leida = true))
+    } catch (error) {
+      console.error('Error marcando todas las notificaciones:', error)
+    }
   }
 
-  const noLeidas = ref(0)
+  const eliminar = async (id: number) => {
+    try {
+      await api.delete(`/notificaciones/${id}`)
+      notificaciones.value = notificaciones.value.filter((n) => n.id !== id)
+    } catch (error) {
+      console.error('Error eliminando notificación:', error)
+    }
+  }
 
   const sinLeer = () => notificaciones.value.filter((n) => !n.leida).length
 
   return {
     notificaciones,
-    noLeidas,
+    cargar,
     agregar,
     marcarLeida,
     marcarTodasLeidas,

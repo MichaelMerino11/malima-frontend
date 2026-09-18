@@ -705,6 +705,8 @@ onMounted(async () => {
 
   await cargarAvatar()
 
+  await notifStore.cargar()
+
   await verificarAlertas()
 
   intervaloNotif = setInterval(verificarAlertas, 60000)
