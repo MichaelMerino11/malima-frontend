@@ -642,7 +642,7 @@ const verificarAlertas = async () => {
 
       const m = meteo.data.data.meteorologia
 
-      if ((m.probabilidad_lluvia ?? 0) > 60) {
+      if ((m.probabilidad_lluvia ?? 0) > 0) {
         const yaExiste = notifStore.notificaciones.some(
           (n) => n.titulo.includes('lluvia') && n.titulo.includes(zona.nombre),
         )
@@ -655,7 +655,7 @@ const verificarAlertas = async () => {
         }
       }
 
-      if (Number(m.velocidad_viento ?? 0) > 40) {
+      if (Number(m.velocidad_viento ?? 0) > 0) {
         const yaExiste = notifStore.notificaciones.some(
           (n) => n.titulo.includes('Viento') && n.titulo.includes(zona.nombre),
         )
