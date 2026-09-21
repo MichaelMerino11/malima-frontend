@@ -298,7 +298,10 @@
       </v-card>
 
       <div class="chart-wrapper mb-5">
-        <GraficoMeteo :datos="historial" />
+        <GraficoMeteo
+          :datos="historial"
+          @cambiar-rango="(rango) => cargarHistorial(Number(zonaSeleccionada), rango)"
+        />
       </div>
 
       <v-row>
@@ -1207,12 +1210,36 @@ const formatHoraCorta = (fecha: string) => {
   })
 }
 
-const cargarHistorial = async (zonaId: number) => {
+const cargarHistorial = async (zonaId: number, rango = '1h') => {
   cargandoHistorial.value = true
-
   try {
-    const { data } = await api.get(`/meteorologia/historial/${zonaId}`)
+    const ahora = new Date()
+    const desde = new Date(ahora)
 
+    switch (rango) {
+      case '1h':
+        desde.setHours(ahora.getHours() - 1)
+        break
+      case '6h':
+        desde.setHours(ahora.getHours() - 6)
+        break
+      case '24h':
+        desde.setDate(ahora.getDate() - 1)
+        break
+      case '7d':
+        desde.setDate(ahora.getDate() - 7)
+        break
+      case '30d':
+        desde.setDate(ahora.getDate() - 30)
+        break
+    }
+
+    const { data } = await api.get(`/meteorologia/historial/${zonaId}`, {
+      params: {
+        desde: desde.toISOString(),
+        hasta: ahora.toISOString(),
+      },
+    })
     if (data.ok) {
       historial.value = data.data ?? []
     } else {
@@ -1220,7 +1247,6 @@ const cargarHistorial = async (zonaId: number) => {
     }
   } catch (error) {
     console.error('Error cargando historial meteorológico:', error)
-
     historial.value = []
   } finally {
     cargandoHistorial.value = false

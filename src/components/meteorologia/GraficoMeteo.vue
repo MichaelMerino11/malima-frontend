@@ -4,23 +4,37 @@
     <v-card-title class="d-flex align-center justify-space-between pa-4 flex-wrap gap-2">
       <div class="d-flex align-center gap-2">
         <v-icon color="primary"> mdi-chart-line </v-icon>
-
         <span class="text-body-1 font-weight-bold"> Tendencia climática </span>
       </div>
-
-      <v-btn-toggle
-        v-model="metricaActiva"
-        mandatory
-        density="compact"
-        variant="outlined"
-        color="primary"
-      >
-        <v-btn value="temperatura" size="small"> Temp. </v-btn>
-        <v-btn value="presion_atmosferica" size="small"> Presión </v-btn>
-        <v-btn value="humedad" size="small"> Humedad </v-btn>
-        <v-btn value="velocidad_viento" size="small"> Viento </v-btn>
-        <v-btn value="radiacion_solar" size="small"> Radiación </v-btn>
-      </v-btn-toggle>
+      <div class="d-flex align-center gap-2 flex-wrap">
+        <v-btn-toggle
+          v-model="rangoActivo"
+          mandatory
+          density="compact"
+          variant="outlined"
+          color="primary"
+          @update:model-value="$emit('cambiarRango', rangoActivo)"
+        >
+          <v-btn value="1h" size="small">1h</v-btn>
+          <v-btn value="6h" size="small">6h</v-btn>
+          <v-btn value="24h" size="small">24h</v-btn>
+          <v-btn value="7d" size="small">7d</v-btn>
+          <v-btn value="30d" size="small">30d</v-btn>
+        </v-btn-toggle>
+        <v-btn-toggle
+          v-model="metricaActiva"
+          mandatory
+          density="compact"
+          variant="outlined"
+          color="primary"
+        >
+          <v-btn value="temperatura" size="small">Temp.</v-btn>
+          <v-btn value="presion_atmosferica" size="small">Presión</v-btn>
+          <v-btn value="humedad" size="small">Humedad</v-btn>
+          <v-btn value="velocidad_viento" size="small">Viento</v-btn>
+          <v-btn value="radiacion_solar" size="small">Radiación</v-btn>
+        </v-btn-toggle>
+      </div>
     </v-card-title>
 
     <v-divider />
@@ -143,16 +157,23 @@ const config: Record<MetricaKey, MetricaConfig> = {
   },
 }
 
+const rangoActivo = ref('1h')
+const emit = defineEmits<{ (e: 'cambiarRango', rango: string): void }>()
+
 /* =========================================================
  * HELPERS
  * ======================================================= */
 
-const formatHora = (fecha: string) => {
-  return new Date(fecha).toLocaleTimeString('es-EC', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
+const formatHora = (fecha: string, rango: string) => {
+  const date = new Date(fecha)
+  if (rango === '7d' || rango === '30d') {
+    return (
+      date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' }) +
+      ' ' +
+      date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
+    )
+  }
+  return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 const formatValor = (valor: number, cfg: MetricaConfig) => {
@@ -189,7 +210,7 @@ const chartOption = computed<EChartsOption>(() => {
 
   const registros = datosOrdenados.value
 
-  const labels = registros.map((dato) => formatHora(dato.registrado_at))
+  const labels = registros.map((dato) => formatHora(dato.registrado_at, rangoActivo.value))
 
   const valores = registros.map((dato) => {
     const valor = Number(dato[metrica])
