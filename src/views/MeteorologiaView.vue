@@ -390,20 +390,26 @@
                   </div>
                 </template>
 
-                <template #item.probabilidad_lluvia="{ item }">
-                  <v-chip
-                    size="small"
-                    :color="
-                      Number(item.probabilidad_lluvia ?? 0) > 60
-                        ? 'error'
-                        : Number(item.probabilidad_lluvia ?? 0) > 35
-                          ? 'warning'
-                          : 'success'
-                    "
-                    variant="tonal"
-                  >
-                    {{ Math.round(Number(item.probabilidad_lluvia ?? 0)) }}%
-                  </v-chip>
+                <template #item.lluvia_intensidad="{ item }">
+                  <div class="table-value">
+                    <v-icon size="16" color="info"> mdi-weather-rainy </v-icon>
+                    {{
+                      item.lluvia_intensidad != null
+                        ? `${formatearNumero(item.lluvia_intensidad)} mm/h`
+                        : '—'
+                    }}
+                  </div>
+                </template>
+
+                <template #item.lluvia_acumulada="{ item }">
+                  <div class="table-value">
+                    <v-icon size="16" color="primary"> mdi-cup-water </v-icon>
+                    {{
+                      item.lluvia_acumulada != null
+                        ? `${formatearNumero(item.lluvia_acumulada)} mm`
+                        : '—'
+                    }}
+                  </div>
                 </template>
 
                 <template #item.presion_atmosferica="{ item }">
@@ -732,12 +738,6 @@ const segundosRestantes = computed(() => {
   return Math.max(0, Math.ceil((progreso.value / 100) * 30))
 })
 
-const probabilidadLluvia = computed(() => {
-  const valor = Number(datos.value?.probabilidad_lluvia ?? 0)
-
-  return Math.min(100, Math.max(0, Math.round(valor)))
-})
-
 const velocidadViento = computed(() => {
   return Number(datos.value?.velocidad_viento ?? 0)
 })
@@ -746,34 +746,28 @@ const riesgoClimatico = computed(() => {
   if (!datos.value) {
     return false
   }
-
-  return probabilidadLluvia.value > 60 || velocidadViento.value > 40
+  return Number(datos.value.lluvia_intensidad ?? 0) > 0 || velocidadViento.value > 40
 })
 
 const textoAlerta = computed(() => {
   if (!datos.value) {
     return ''
   }
-
-  const lluvia = probabilidadLluvia.value > 60
-
+  const lluvia = Number(datos.value.lluvia_intensidad ?? 0) > 0
   const viento = velocidadViento.value > 40
-
   if (lluvia && viento) {
     return (
-      `Se detectó ${probabilidadLluvia.value}% de probabilidad de lluvia ` +
+      `Se detectó lluvia activa (${formatearNumero(datos.value.lluvia_intensidad)} mm/h) ` +
       `y viento de ${formatearNumero(velocidadViento.value)} km/h. ` +
       'Se recomienda realizar el cierre preventivo de las naves.'
     )
   }
-
   if (lluvia) {
     return (
-      `La probabilidad de lluvia alcanzó ${probabilidadLluvia.value}%. ` +
+      `Se detectó lluvia activa con intensidad de ${formatearNumero(datos.value.lluvia_intensidad)} mm/h. ` +
       'Se recomienda realizar el cierre preventivo de las naves.'
     )
   }
-
   return (
     `La velocidad del viento alcanzó ${formatearNumero(velocidadViento.value)} km/h. ` +
     'Se recomienda realizar el cierre preventivo de las naves.'
@@ -861,13 +855,11 @@ const estadoClima = computed(() => {
    * cuando el backend no entrega
    * una condición textual.
    */
-  const lluvia = Number(datos.value.probabilidad_lluvia ?? 0)
 
   const viento = Number(datos.value.velocidad_viento ?? 0)
-
   const radiacion = Number(datos.value.radiacion_solar ?? 0)
-
   const humedad = Number(datos.value.humedad ?? 0)
+  const lluviaIntensidad = Number(datos.value.lluvia_intensidad ?? 0)
 
   if (viento > 40) {
     return {
@@ -878,19 +870,15 @@ const estadoClima = computed(() => {
     }
   }
 
-  if (lluvia >= 75) {
+  if (lluviaIntensidad > 0) {
     return { texto: 'Lluvioso', color: 'info', icono: 'mdi-weather-pouring', semaforo: 'rojo' }
   }
 
-  if (lluvia >= 50) {
-    return { texto: 'Nublado', color: 'primary', icono: 'mdi-weather-cloudy', semaforo: 'amarillo' }
-  }
-
-  if (lluvia >= 25 || humedad >= 85) {
+  if (humedad >= 85) {
     return {
-      texto: 'Parcialmente nublado',
-      color: 'info',
-      icono: 'mdi-weather-partly-cloudy',
+      texto: 'Muy húmedo',
+      color: 'primary',
+      icono: 'mdi-weather-cloudy',
       semaforo: 'amarillo',
     }
   }
@@ -915,11 +903,10 @@ const recomendacion = computed(() => {
     }
   }
 
-  const lluvia = Number(datos.value.probabilidad_lluvia ?? 0)
-
+  const lluvia = Number(datos.value.lluvia_intensidad ?? 0)
   const viento = Number(datos.value.velocidad_viento ?? 0)
-
-  if (lluvia > 60 || viento > 40) {
+  
+  if (lluvia > 0 || viento > 40) {
     return {
       titulo: 'Cerrar naves',
 
@@ -976,10 +963,6 @@ const metricas = computed(() => {
 
   const viento = Number(datos.value.velocidad_viento ?? 0)
 
-  const radiacion = Number(datos.value.radiacion_solar ?? 0)
-
-  const lluvia = Number(datos.value.probabilidad_lluvia ?? 0)
-
   const presion = Number(datos.value.presion_atmosferica ?? 1013)
 
   return [
@@ -1026,31 +1009,26 @@ const metricas = computed(() => {
     },
 
     {
-      label: 'Radiación solar',
-
-      value: formatearNumero(radiacion),
-
-      unit: 'W/m²',
-
-      icon: 'mdi-white-balance-sunny',
-
-      color: 'warning',
-
-      progress: normalizar(radiacion, 0, 1000),
-    },
-
-    {
-      label: 'Prob. de lluvia',
-
-      value: formatearNumero(lluvia),
-
-      unit: '%',
-
+      label: 'Int. lluvia',
+      value:
+        datos.value?.lluvia_intensidad != null
+          ? formatearNumero(datos.value.lluvia_intensidad)
+          : '--',
+      unit: datos.value?.lluvia_intensidad != null ? 'mm/h' : '',
       icon: 'mdi-weather-rainy',
-
-      color: lluvia > 60 ? 'error' : lluvia > 35 ? 'warning' : 'info',
-
-      progress: normalizar(lluvia, 0, 100),
+      color: 'info',
+      progress: normalizar(Number(datos.value?.lluvia_intensidad ?? 0), 0, 50),
+    },
+    {
+      label: 'Lluvia acum.',
+      value:
+        datos.value?.lluvia_acumulada != null
+          ? formatearNumero(datos.value.lluvia_acumulada)
+          : '--',
+      unit: datos.value?.lluvia_acumulada != null ? 'mm' : '',
+      icon: 'mdi-cup-water',
+      color: 'primary',
+      progress: normalizar(Number(datos.value?.lluvia_acumulada ?? 0), 0, 100),
     },
 
     {
@@ -1079,8 +1057,6 @@ const condiciones = computed(() => {
   const humedadAlta = Number(datos.value.humedad ?? 0) > 85
 
   const vientoFuerte = Number(datos.value.velocidad_viento ?? 0) > 40
-
-  const lluviaAlta = Number(datos.value.probabilidad_lluvia ?? 0) > 60
 
   const presionBaja = Number(datos.value.presion_atmosferica ?? 1013) < 1000
 
@@ -1129,16 +1105,14 @@ const condiciones = computed(() => {
 
     {
       label: 'Lluvia',
-
-      estado: lluviaAlta ? 'Inminente' : 'Sin riesgo',
-
-      detalle: lluviaAlta ? 'Alta probabilidad de precipitación' : 'Sin riesgo inmediato',
-
-      color: lluviaAlta ? 'error' : 'success',
-
-      icon: lluviaAlta ? 'mdi-alert-outline' : 'mdi-check',
-
-      alerta: lluviaAlta,
+      estado: Number(datos.value?.lluvia_intensidad ?? 0) > 0 ? 'Activa' : 'Sin lluvia',
+      detalle:
+        Number(datos.value?.lluvia_intensidad ?? 0) > 0
+          ? `Intensidad: ${formatearNumero(datos.value?.lluvia_intensidad)} mm/h · Acumulado: ${formatearNumero(datos.value?.lluvia_acumulada)} mm`
+          : `Acumulado: ${formatearNumero(datos.value?.lluvia_acumulada ?? 0)} mm`,
+      color: Number(datos.value?.lluvia_intensidad ?? 0) > 0 ? 'error' : 'success',
+      icon: Number(datos.value?.lluvia_intensidad ?? 0) > 0 ? 'mdi-alert-outline' : 'mdi-check',
+      alerta: Number(datos.value?.lluvia_intensidad ?? 0) > 0,
     },
 
     {
@@ -1176,7 +1150,8 @@ const headersHistorial = [
   { title: 'Temp.', key: 'temperatura' },
   { title: 'Humedad', key: 'humedad' },
   { title: 'Viento', key: 'velocidad_viento' },
-  { title: 'Lluvia', key: 'probabilidad_lluvia' },
+  { title: 'Int. lluvia', key: 'lluvia_intensidad' },
+  { title: 'Lluvia acum.', key: 'lluvia_acumulada' },
   { title: 'Presión', key: 'presion_atmosferica' },
 ]
 

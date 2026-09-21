@@ -8,9 +8,11 @@ export interface DatoMeteorologico {
   temperatura: number
   humedad: number
   velocidad_viento: number
-  radiacion_solar: number
-  probabilidad_lluvia: number
-  presion_atmosferica: number
+  radiacion_solar: number | null
+  probabilidad_lluvia: number | null
+  presion_atmosferica: number | null
+  lluvia_intensidad: number | null
+  lluvia_acumulada: number | null
   registrado_at: string
 }
 
