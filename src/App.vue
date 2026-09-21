@@ -530,6 +530,23 @@
     </v-main>
 
     <LoadingApp :visible="loadingStore.visible" :mensaje="loadingStore.mensaje" />
+    <v-dialog v-model="mostrarAviso" max-width="390" persistent>
+      <v-card rounded="xl" elevation="12" class="logout-dialog">
+        <div class="logout-dialog__icon">
+          <v-icon size="34" color="warning"> mdi-clock-alert-outline </v-icon>
+        </div>
+        <v-card-title class="logout-dialog__title"> Sesión por expirar </v-card-title>
+        <v-card-text class="logout-dialog__text">
+          Tu sesión cerrará en <strong>{{ segundosRestantes }}</strong> segundos por inactividad.
+        </v-card-text>
+        <v-card-actions class="logout-dialog__actions">
+          <v-btn color="primary" variant="tonal" rounded="lg" @click="continuar">
+            Continuar sesión
+          </v-btn>
+          <v-btn color="error" variant="text" rounded="lg" @click="logout"> Cerrar sesión </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
@@ -545,12 +562,17 @@ import { useLoadingStore } from './stores/loading'
 import { useSocket } from './composables/useSocket'
 
 import LoadingApp from './components/shared/LoadingApp.vue'
+import { useInactividad } from './composables/useInactividad'
+
 import api from './api/axios'
 
 const loadingStore = useLoadingStore()
 const authStore = useAuthStore()
 const notifStore = useNotificacionesStore()
 const temaStore = useTemaStore()
+const { mostrarAviso, segundosRestantes, continuar } = useInactividad(() => {
+  logout()
+})
 
 const theme = useTheme()
 const router = useRouter()
