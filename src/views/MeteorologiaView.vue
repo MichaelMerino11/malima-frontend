@@ -42,7 +42,7 @@
           hide-details
           prepend-inner-icon="mdi-map-marker-outline"
           class="zone-selector"
-          :disabled="zonaItems.length === 0"
+          :disabled="zonaItems.length === 0 || actualizando"
           @update:model-value="cargar"
         />
 
@@ -299,8 +299,10 @@
 
       <div class="chart-wrapper mb-5">
         <GraficoMeteo
-          :datos="historial"
-          @cambiar-rango="(rango) => cargarHistorial(Number(zonaSeleccionada), rango)"
+          :datos="historialGrafico"
+          :rango="rangoGrafico"
+          :cargando="cargandoGrafico"
+          @cambiar-rango="cambiarRangoGrafico"
         />
       </div>
 
@@ -322,7 +324,7 @@
 
               <div class="history-actions">
                 <v-chip size="small" variant="tonal" color="primary">
-                  {{ historial.length }}
+                  {{ historialReciente.length }}
                   registros
                 </v-chip>
 
@@ -332,7 +334,7 @@
                   size="small"
                   rounded="lg"
                   prepend-icon="mdi-export-variant"
-                  :disabled="historial.length === 0"
+                  :disabled="historialReciente.length === 0"
                   @click="modalExportar = true"
                 >
                   Exportar
@@ -345,8 +347,8 @@
             <div class="history-table-wrapper">
               <v-data-table
                 :headers="headersHistorial"
-                :items="historial"
-                :loading="cargandoHistorial"
+                :items="historialReciente"
+                :loading="cargandoHistorialReciente"
                 density="comfortable"
                 no-data-text="Sin registros disponibles"
                 hide-default-footer
@@ -639,7 +641,7 @@
       </div>
     </v-card>
 
-    <ModalExportar v-model="modalExportar" tipo="meteorologia" :datos="historial" />
+    <ModalExportar v-model="modalExportar" tipo="meteorologia" :datos="historialReciente" />
   </v-container>
 </template>
 
@@ -669,15 +671,17 @@ const { zonas } = storeToRefs(invernaderosStore)
 
 const zonaSeleccionada = ref<number | null>(null)
 
-const historial = ref<any[]>([])
+const historialGrafico = ref<any[]>([])
+const historialReciente = ref<any[]>([])
 
-const cargandoHistorial = ref(false)
+const cargandoGrafico = ref(false)
+const cargandoHistorialReciente = ref(false)
 
 const actualizando = ref(false)
-
 const modalExportar = ref(false)
-
 const progreso = ref(100)
+
+let solicitudHistorialId = 0
 
 let intervalo: ReturnType<typeof setInterval> | undefined
 
@@ -959,6 +963,8 @@ const formatearNumero = (valor: number | string | null | undefined) => {
   return numero.toFixed(1)
 }
 
+const rangoGrafico = ref('1h')
+
 const metricas = computed(() => {
   if (!datos.value) {
     return []
@@ -1155,6 +1161,16 @@ const cantidadAlertas = computed(() => {
   return condiciones.value.filter((condicion) => condicion.alerta).length
 })
 
+const cambiarRangoGrafico = async (rango: string) => {
+  rangoGrafico.value = rango
+
+  if (!zonaSeleccionada.value) {
+    return
+  }
+
+  await cargarHistorial(Number(zonaSeleccionada.value), rango, true)
+}
+
 const headersHistorial = [
   { title: 'Fecha', key: 'registrado_at' },
   { title: 'Temp.', key: 'temperatura' },
@@ -1210,46 +1226,61 @@ const formatHoraCorta = (fecha: string) => {
   })
 }
 
-const cargarHistorial = async (zonaId: number, rango = '1h') => {
-  cargandoHistorial.value = true
-  try {
-    const ahora = new Date()
-    const desde = new Date(ahora)
+const cargarHistorial = async (zonaId: number, rango = '1h', mostrarCarga = false) => {
+  const solicitudId = ++solicitudHistorialId
 
-    switch (rango) {
-      case '1h':
-        desde.setHours(ahora.getHours() - 1)
-        break
-      case '6h':
-        desde.setHours(ahora.getHours() - 6)
-        break
-      case '24h':
-        desde.setDate(ahora.getDate() - 1)
-        break
-      case '7d':
-        desde.setDate(ahora.getDate() - 7)
-        break
-      case '30d':
-        desde.setDate(ahora.getDate() - 30)
-        break
+  if (mostrarCarga) {
+    cargandoGrafico.value = true
+  }
+
+  try {
+    const { data } = await api.get(`/meteorologia/historial/${zonaId}`, {
+      params: { rango },
+    })
+
+    if (solicitudId !== solicitudHistorialId) {
+      return
     }
 
+    historialGrafico.value = data.ok ? (data.data ?? []) : []
+  } catch (error) {
+    if (solicitudId !== solicitudHistorialId) {
+      return
+    }
+
+    console.error('Error cargando historial meteorológico:', error)
+
+    historialGrafico.value = []
+  } finally {
+    if (solicitudId === solicitudHistorialId) {
+      cargandoGrafico.value = false
+    }
+  }
+}
+
+const cargarHistorialReciente = async (zonaId: number) => {
+  const mostrarLoading = historialReciente.value.length === 0
+
+  if (mostrarLoading) {
+    cargandoHistorialReciente.value = true
+  }
+
+  try {
     const { data } = await api.get(`/meteorologia/historial/${zonaId}`, {
       params: {
-        desde: desde.toISOString(),
-        hasta: ahora.toISOString(),
+        limit: 20,
       },
     })
-    if (data.ok) {
-      historial.value = data.data ?? []
-    } else {
-      historial.value = []
-    }
+
+    historialReciente.value = data.ok ? (data.data ?? []) : []
   } catch (error) {
-    console.error('Error cargando historial meteorológico:', error)
-    historial.value = []
+    console.error('Error cargando historial reciente:', error)
+
+    historialReciente.value = []
   } finally {
-    cargandoHistorial.value = false
+    if (mostrarLoading) {
+      cargandoHistorialReciente.value = false
+    }
   }
 }
 
@@ -1263,7 +1294,13 @@ const cargar = async () => {
   const zonaId = Number(zonaSeleccionada.value)
 
   try {
-    await Promise.all([store.cargarUltimoDato(zonaId), cargarHistorial(zonaId)])
+    await Promise.all([
+      store.cargarUltimoDato(zonaId),
+
+      cargarHistorial(zonaId, rangoGrafico.value),
+
+      cargarHistorialReciente(zonaId),
+    ])
 
     progreso.value = 100
   } catch (error) {

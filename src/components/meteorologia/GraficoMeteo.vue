@@ -1,47 +1,86 @@
 <template>
   <v-card rounded="lg" elevation="2">
     <!-- HEADER -->
-    <v-card-title class="d-flex align-center justify-space-between pa-4 flex-wrap gap-2">
+    <v-card-title
+      class="chart-header d-flex align-center justify-space-between pa-4 flex-wrap gap-2"
+    >
       <div class="d-flex align-center gap-2">
         <v-icon color="primary"> mdi-chart-line </v-icon>
         <span class="text-body-1 font-weight-bold"> Tendencia climática </span>
       </div>
-      <div class="d-flex align-center gap-2 flex-wrap">
-        <v-btn-toggle
-          v-model="rangoActivo"
-          mandatory
-          density="compact"
-          variant="outlined"
-          color="primary"
-          @update:model-value="$emit('cambiarRango', rangoActivo)"
-        >
-          <v-btn value="1h" size="small">1h</v-btn>
-          <v-btn value="6h" size="small">6h</v-btn>
-          <v-btn value="24h" size="small">24h</v-btn>
-          <v-btn value="7d" size="small">7d</v-btn>
-          <v-btn value="30d" size="small">30d</v-btn>
-        </v-btn-toggle>
-        <v-btn-toggle
-          v-model="metricaActiva"
-          mandatory
-          density="compact"
-          variant="outlined"
-          color="primary"
-        >
-          <v-btn value="temperatura" size="small">Temp.</v-btn>
-          <v-btn value="presion_atmosferica" size="small">Presión</v-btn>
-          <v-btn value="humedad" size="small">Humedad</v-btn>
-          <v-btn value="velocidad_viento" size="small">Viento</v-btn>
-          <v-btn value="radiacion_solar" size="small">Radiación</v-btn>
-        </v-btn-toggle>
+
+      <div class="chart-controls">
+        <!-- RANGO DE TIEMPO -->
+        <div class="chart-control-group">
+          <div class="chart-control-label">
+            <v-icon size="15"> mdi-clock-outline </v-icon>
+
+            <span>Rango</span>
+          </div>
+
+          <v-btn-toggle
+            v-model="rangoActivo"
+            mandatory
+            density="compact"
+            variant="outlined"
+            color="primary"
+            class="chart-toggle"
+          >
+            <v-btn value="1h" size="small">1h</v-btn>
+            <v-btn value="6h" size="small">6h</v-btn>
+            <v-btn value="24h" size="small">24h</v-btn>
+            <v-btn value="7d" size="small">7d</v-btn>
+            <v-btn value="30d" size="small">30d</v-btn>
+          </v-btn-toggle>
+        </div>
+
+        <!-- SEPARADOR -->
+        <div class="chart-control-divider"></div>
+
+        <!-- VARIABLE -->
+        <div class="chart-control-group">
+          <div class="chart-control-label">
+            <v-icon size="15"> mdi-chart-line </v-icon>
+
+            <span>Variable</span>
+          </div>
+
+          <v-btn-toggle
+            v-model="metricaActiva"
+            mandatory
+            density="compact"
+            variant="outlined"
+            color="primary"
+            class="chart-toggle"
+          >
+            <v-btn value="temperatura" size="small"> Temp. </v-btn>
+
+            <v-btn value="presion_atmosferica" size="small"> Presión </v-btn>
+
+            <v-btn value="humedad" size="small"> Humedad </v-btn>
+
+            <v-btn value="velocidad_viento" size="small"> Viento </v-btn>
+
+            <v-btn value="radiacion_solar" size="small"> Radiación </v-btn>
+          </v-btn-toggle>
+        </div>
       </div>
     </v-card-title>
 
     <v-divider />
 
-    <v-card-text class="pa-4">
+    <v-card-text class="pa-4 position-relative">
+      <!-- OVERLAY DE CARGA -->
+      <v-overlay :model-value="cargando" contained persistent class="align-center justify-center">
+        <div class="text-center">
+          <v-progress-circular indeterminate color="primary" size="32" width="3" />
+
+          <div class="text-caption mt-2">Cargando período...</div>
+        </div>
+      </v-overlay>
+
       <!-- SIN DATOS -->
-      <div v-if="datosOrdenados.length === 0" class="text-center py-8">
+      <div v-if="datosOrdenados.length === 0 && !cargando" class="text-center py-8">
         <v-icon size="48" color="grey-lighten-2"> mdi-chart-line-variant </v-icon>
 
         <p class="text-body-2 text-medium-emphasis mt-2">
@@ -78,14 +117,16 @@ use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
  * TIPOS
  * ======================================================= */
 
+type ValorMeteo = number | string | null
+
 interface DatoMeteo {
   registrado_at: string
-  temperatura: number
-  humedad: number
-  velocidad_viento: number
-  radiacion_solar: number
-  probabilidad_lluvia: number
-  presion_atmosferica: number
+  temperatura: ValorMeteo
+  humedad: ValorMeteo
+  velocidad_viento: ValorMeteo
+  radiacion_solar: ValorMeteo
+  probabilidad_lluvia: ValorMeteo
+  presion_atmosferica: ValorMeteo
 }
 
 type MetricaKey =
@@ -108,6 +149,8 @@ interface MetricaConfig {
 
 const props = defineProps<{
   datos: DatoMeteo[]
+  rango: string
+  cargando?: boolean
 }>()
 
 /* =========================================================
@@ -157,8 +200,17 @@ const config: Record<MetricaKey, MetricaConfig> = {
   },
 }
 
-const rangoActivo = ref('1h')
-const emit = defineEmits<{ (e: 'cambiarRango', rango: string): void }>()
+const emit = defineEmits<{
+  (e: 'cambiarRango', rango: string): void
+}>()
+
+const rangoActivo = computed({
+  get: () => props.rango,
+
+  set: (value: string) => {
+    emit('cambiarRango', value)
+  },
+})
 
 /* =========================================================
  * HELPERS
@@ -166,14 +218,41 @@ const emit = defineEmits<{ (e: 'cambiarRango', rango: string): void }>()
 
 const formatHora = (fecha: string, rango: string) => {
   const date = new Date(fecha)
-  if (rango === '7d' || rango === '30d') {
-    return (
-      date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit' }) +
-      ' ' +
-      date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
-    )
+
+  switch (rango) {
+    case '1h':
+    case '6h':
+      return date.toLocaleTimeString('es-EC', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+
+    case '24h':
+      return date.toLocaleTimeString('es-EC', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+
+    case '7d':
+    case '30d':
+      return (
+        date.toLocaleDateString('es-EC', {
+          day: '2-digit',
+          month: '2-digit',
+        }) +
+        ' ' +
+        date.toLocaleTimeString('es-EC', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+      )
+
+    default:
+      return ''
   }
-  return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 const formatValor = (valor: number, cfg: MetricaConfig) => {
@@ -213,10 +292,22 @@ const chartOption = computed<EChartsOption>(() => {
   const labels = registros.map((dato) => formatHora(dato.registrado_at, rangoActivo.value))
 
   const valores = registros.map((dato) => {
-    const valor = Number(dato[metrica])
+    const raw = dato[metrica]
 
-    return Number.isFinite(valor) ? valor : 0
+    if (raw === null || raw === undefined || raw === '') {
+      return null
+    }
+
+    const valor = Number(raw)
+
+    return Number.isFinite(valor) ? valor : null
   })
+
+  const valoresNumericos = valores.filter((valor): valor is number => typeof valor === 'number')
+
+  const minValor = valoresNumericos.length > 0 ? Math.min(...valoresNumericos) : 0
+
+  const maxValor = valoresNumericos.length > 0 ? Math.max(...valoresNumericos) : 1
 
   /*
    * Calculamos un rango Y dinámico.
@@ -224,9 +315,6 @@ const chartOption = computed<EChartsOption>(() => {
    * Esto evita que una temperatura de 20.0 - 20.5 °C
    * se vea aplastada contra el gráfico.
    */
-  const minValor = valores.length > 0 ? Math.min(...valores) : 0
-
-  const maxValor = valores.length > 0 ? Math.max(...valores) : 1
 
   const rango = maxValor - minValor
 
@@ -420,5 +508,88 @@ export default {
 .grafico-meteo {
   width: 100%;
   height: 280px;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+
+  gap: 14px;
+
+  flex-wrap: wrap;
+}
+
+.chart-control-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.chart-control-label {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  padding-left: 2px;
+
+  font-size: 0.68rem;
+  line-height: 1;
+
+  font-weight: 650;
+
+  color: rgba(var(--v-theme-on-surface), 0.52);
+}
+
+.chart-control-label .v-icon {
+  color: rgb(var(--v-theme-primary));
+}
+
+.chart-control-divider {
+  width: 1px;
+  height: 36px;
+
+  align-self: flex-end;
+
+  margin-bottom: 1px;
+
+  background: rgba(var(--v-border-color), 0.7);
+}
+
+.chart-toggle {
+  border-radius: 7px;
+}
+
+.chart-header {
+  white-space: normal;
+  overflow: visible;
+}
+
+@media (max-width: 900px) {
+  .chart-controls {
+    width: 100%;
+
+    justify-content: flex-start;
+
+    gap: 10px;
+  }
+
+  .chart-control-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .chart-control-group {
+    width: 100%;
+  }
+
+  .chart-toggle {
+    width: 100%;
+
+    overflow-x: auto;
+  }
 }
 </style>
