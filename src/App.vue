@@ -680,10 +680,10 @@ const verificarAlertas = async () => {
         }
       }
 
-      // Naves en modo local y en movimiento
-      const zonasData = await api.get(`/zonas/${zona.id}`)
-      if (zonasData.data?.ok) {
-        for (const nave of zonasData.data.data?.invernaderos ?? []) {
+      // Naves en modo local y en movimiento — usamos los datos ya cargados de /zonas
+      const zonasCompleta = data.data.find((z: any) => z.id === zona.id)
+      if (zonasCompleta) {
+        for (const nave of zonasCompleta.invernaderos ?? []) {
           if (nave.modo === 'local') {
             const yaExiste = notifStore.notificaciones.some(
               (n) => n.titulo.includes('local') && n.titulo.includes(nave.nombre),
