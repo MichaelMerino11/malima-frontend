@@ -647,7 +647,12 @@
       </div>
     </v-card>
 
-    <ModalExportar v-model="modalExportar" tipo="meteorologia" :datos="historialReciente" />
+    <ModalExportar
+      v-model="modalExportar"
+      tipo="meteorologia"
+      :datos="historialReciente"
+      :zona-id="zonaSeleccionada"
+    />
   </v-container>
 </template>
 
@@ -905,7 +910,7 @@ const recomendacion = computed(() => {
 
   const lluvia = Number(datos.value.lluvia_intensidad ?? 0)
   const viento = Number(datos.value.velocidad_viento ?? 0)
-  
+
   if (lluvia > 0 || viento > 40) {
     return {
       titulo: 'Cerrar naves',

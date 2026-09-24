@@ -476,7 +476,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-
+import api from '../../api/axios'
 import { useExportar } from '../../composables/useExportar'
 
 interface ColumnaExportacion {
@@ -488,6 +488,7 @@ const props = defineProps<{
   modelValue: boolean
   tipo: 'eventos' | 'meteorologia'
   datos: any[]
+  zonaId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -686,7 +687,9 @@ const errorFechas = computed(() => {
 
 const puedeExportar = computed(() => {
   return Boolean(
-    datosFiltrados.value.length > 0 && filtros.value.columnas.length > 0 && !errorFechas.value,
+    filtros.value.columnas.length > 0 &&
+    !errorFechas.value &&
+    (datosFiltrados.value.length > 0 || (filtros.value.fechaDesde && filtros.value.fechaHasta)),
   )
 })
 
@@ -915,28 +918,45 @@ const cerrar = () => {
   visible.value = false
 }
 
-const exportar = (formato: 'excel' | 'pdf') => {
-  if (!puedeExportar.value) {
-    return
-  }
+const exportar = async (formato: 'excel' | 'pdf') => {
+  if (!puedeExportar.value) return
 
   const columnasSeleccionadas = filtros.value.columnas
-
   const columnasInfo = columnasDisponibles.value.filter((columna) =>
     columnasSeleccionadas.includes(columna.key),
   )
 
   const nombre = props.tipo === 'eventos' ? 'historial-eventos-malima' : 'meteorologia-malima'
-
   const titulo = props.tipo === 'eventos' ? 'Historial de Eventos' : 'Datos Meteorológicos'
 
-  const filas = datosFiltrados.value.map((dato) => {
-    const fila = mapearFila(dato)
+  let datosExportar = datosFiltrados.value
 
+  // Si es meteorología y hay rango de fechas, consultar backend
+  if (
+    props.tipo === 'meteorologia' &&
+    props.zonaId &&
+    filtros.value.fechaDesde &&
+    filtros.value.fechaHasta
+  ) {
+    try {
+      const desde = `${filtros.value.fechaDesde}T00:00:00.000Z`
+      const hasta = `${filtros.value.fechaHasta}T23:59:59.999Z`
+      const { data } = await api.get(`/meteorologia/historial/${props.zonaId}`, {
+        params: { desde, hasta },
+      })
+      if (data.ok && Array.isArray(data.data)) {
+        datosExportar = data.data
+      }
+    } catch (error) {
+      console.error('Error cargando datos para exportar:', error)
+    }
+  }
+
+  const filas = datosExportar.map((dato) => {
+    const fila = mapearFila(dato)
     return columnasInfo.reduce(
       (acumulador, columna) => {
         acumulador[columna.label] = fila[columna.key] ?? '—'
-
         return acumulador
       },
       {} as Record<string, any>,
@@ -947,9 +967,7 @@ const exportar = (formato: 'excel' | 'pdf') => {
     exportarExcel(filas, nombre, titulo)
   } else {
     const headers = columnasInfo.map((columna) => columna.label)
-
     const rows = filas.map((fila) => headers.map((header) => fila[header] ?? '—'))
-
     exportarPDF(titulo, headers, rows, nombre)
   }
 
