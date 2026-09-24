@@ -548,30 +548,12 @@ const columnasEventos: ColumnaExportacion[] = [
 ]
 
 const columnasMeteo: ColumnaExportacion[] = [
-  {
-    key: 'registrado_at',
-    label: 'Fecha',
-  },
-  {
-    key: 'temperatura',
-    label: 'Temperatura',
-  },
-  {
-    key: 'humedad',
-    label: 'Humedad',
-  },
-  {
-    key: 'velocidad_viento',
-    label: 'Viento',
-  },
-  {
-    key: 'radiacion_solar',
-    label: 'Radiación solar',
-  },
-  {
-    key: 'probabilidad_lluvia',
-    label: 'Prob. lluvia',
-  },
+  { key: 'registrado_at', label: 'Fecha' },
+  { key: 'temperatura', label: 'Temperatura' },
+  { key: 'humedad', label: 'Humedad' },
+  { key: 'velocidad_viento', label: 'Viento' },
+  { key: 'lluvia_intensidad', label: 'Int. lluvia (mm/h)' },
+  { key: 'lluvia_acumulada', label: 'Lluvia acum. (mm)' },
   { key: 'presion_atmosferica', label: 'Presión' },
 ]
 
@@ -815,17 +797,11 @@ const mapearFila = (dato: any): Record<string, any> => {
 
   return {
     registrado_at: formatFecha(dato.registrado_at),
-
     temperatura: dato.temperatura,
-
     humedad: dato.humedad,
-
     velocidad_viento: dato.velocidad_viento,
-
-    radiacion_solar: dato.radiacion_solar,
-
-    probabilidad_lluvia: dato.probabilidad_lluvia ?? 0,
-
+    lluvia_intensidad: dato.lluvia_intensidad ?? '—',
+    lluvia_acumulada: dato.lluvia_acumulada ?? '—',
     presion_atmosferica: dato.presion_atmosferica ?? '—',
   }
 }
@@ -856,9 +832,9 @@ const iconoColumna = (key: string) => {
 
     velocidad_viento: 'mdi-weather-windy',
 
-    radiacion_solar: 'mdi-white-balance-sunny',
+    lluvia_intensidad: 'mdi-weather-rainy',
 
-    probabilidad_lluvia: 'mdi-weather-rainy',
+    lluvia_acumulada: 'mdi-cup-water',
 
     presion_atmosferica: 'mdi-gauge',
   }
@@ -939,8 +915,8 @@ const exportar = async (formato: 'excel' | 'pdf') => {
     filtros.value.fechaHasta
   ) {
     try {
-      const desde = `${filtros.value.fechaDesde}T00:00:00.000Z`
-      const hasta = `${filtros.value.fechaHasta}T23:59:59.999Z`
+      const desde = `${filtros.value.fechaDesde}T05:00:00.000Z`
+      const hasta = `${filtros.value.fechaHasta}T04:59:59.999Z`
       const { data } = await api.get(`/meteorologia/historial/${props.zonaId}`, {
         params: { desde, hasta },
       })
