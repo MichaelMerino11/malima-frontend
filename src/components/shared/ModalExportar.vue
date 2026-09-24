@@ -941,11 +941,9 @@ const exportar = async (formato: 'excel' | 'pdf') => {
     try {
       const desde = `${filtros.value.fechaDesde}T00:00:00.000Z`
       const hasta = `${filtros.value.fechaHasta}T23:59:59.999Z`
-      console.log('Exportando desde:', desde, 'hasta:', hasta)
       const { data } = await api.get(`/meteorologia/historial/${props.zonaId}`, {
         params: { desde, hasta },
       })
-      console.log('Registros recibidos:', data.data?.length, 'ok:', data.ok)
       if (data.ok && Array.isArray(data.data)) {
         datosExportar = data.data
       }
