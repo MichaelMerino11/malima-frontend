@@ -99,6 +99,198 @@
       </v-col>
     </v-row>
 
+    <!-- ALARMAS PLC ACTIVAS -->
+    <v-card
+      v-if="alarmasPlcActivas.length > 0"
+      rounded="xl"
+      elevation="0"
+      class="main-card mb-5"
+      style="
+        border: 1px solid rgba(var(--v-theme-error), 0.3);
+        background: rgba(var(--v-theme-error), 0.02);
+      "
+    >
+      <div class="alarm-toolbar">
+        <div class="alarm-toolbar__title">
+          <div
+            class="section-icon"
+            style="color: rgb(var(--v-theme-error)); background: rgba(var(--v-theme-error), 0.1)"
+          >
+            <v-icon size="21"> mdi-chip </v-icon>
+          </div>
+          <div>
+            <h2>Alarmas activas del PLC</h2>
+            <span>
+              {{ alarmasPlcActivas.length }}
+              {{ alarmasPlcActivas.length === 1 ? 'alarma activa' : 'alarmas activas' }} en este
+              momento
+            </span>
+          </div>
+        </div>
+        <v-chip color="error" variant="tonal" size="small">
+          <span class="alarm-state-dot alarm-state-dot--active mr-1" />
+          En vivo
+        </v-chip>
+      </div>
+      <v-divider />
+      <div class="alarm-list">
+        <div
+          v-for="alarma in alarmasPlcActivas"
+          :key="alarma.alarma_id"
+          class="alarm-item alarm-item--active"
+        >
+          <span class="alarm-severity-line alarm-severity-line--error" />
+          <div class="alarm-item__icon alarm-item__icon--error">
+            <v-icon size="23"> {{ tipoAlarmaIcono(alarma.tipo) }} </v-icon>
+          </div>
+          <div class="alarm-item__content">
+            <div class="alarm-item__top">
+              <div class="alarm-item__message">
+                {{ alarma.descripcion ?? tipoAlarmaLabel(alarma.tipo) }}
+              </div>
+              <div class="alarm-item__chips">
+                <v-chip size="small" color="error" variant="tonal" class="alarm-type-chip">
+                  <v-icon start size="15"> {{ tipoAlarmaIcono(alarma.tipo) }} </v-icon>
+                  {{ tipoAlarmaLabel(alarma.tipo) }}
+                </v-chip>
+                <v-chip size="small" color="warning" variant="tonal" class="alarm-type-chip">
+                  <v-icon start size="15"> mdi-chip </v-icon>
+                  PLC{{ alarma.plc_id }}
+                </v-chip>
+              </div>
+            </div>
+            <div class="alarm-item__meta">
+              <span v-if="alarma.nave_nombre" class="alarm-meta">
+                <v-icon size="15"> mdi-greenhouse </v-icon>
+                {{ alarma.nave_nombre }}
+              </span>
+              <span v-else class="alarm-meta">
+                <v-icon size="15"> mdi-broadcast </v-icon>
+                Global
+              </span>
+              <span class="alarm-meta">
+                <v-icon size="15"> mdi-clock-alert-outline </v-icon>
+                Activa hace {{ tiempoDesde(alarma.primera_vez_at) }}
+              </span>
+              <span class="alarm-meta">
+                <v-icon size="15"> mdi-identifier </v-icon>
+                {{ alarma.alarma_id }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </v-card>
+
+    <!-- HISTORIAL ALARMAS PLC -->
+    <v-card rounded="xl" elevation="0" class="main-card mb-5">
+      <div class="alarm-toolbar">
+        <div class="alarm-toolbar__title">
+          <div class="section-icon">
+            <v-icon size="21"> mdi-history </v-icon>
+          </div>
+          <div>
+            <h2>Historial de alarmas PLC</h2>
+            <span> Activaciones y restablecimientos registrados </span>
+          </div>
+        </div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          size="small"
+          rounded="lg"
+          prepend-icon="mdi-refresh"
+          :loading="cargandoPlc"
+          @click="cargarAlarmasPlc"
+        >
+          Actualizar
+        </v-btn>
+      </div>
+      <v-divider />
+      <div v-if="historialAlarmasPlc.length === 0" class="empty-state">
+        <div class="empty-state__icon">
+          <v-icon size="42" color="success"> mdi-shield-check-outline </v-icon>
+        </div>
+        <h3>Sin eventos de alarma PLC</h3>
+        <p>No se han registrado activaciones ni restablecimientos.</p>
+      </div>
+      <div v-else class="alarm-list">
+        <div
+          v-for="alarma in historialAlarmasPlc"
+          :key="`${alarma.id}`"
+          class="alarm-item"
+          :class="alarma.evento === 'activacion' ? 'alarm-item--active' : 'alarm-item--resolved'"
+        >
+          <span
+            class="alarm-severity-line"
+            :class="
+              alarma.evento === 'activacion'
+                ? 'alarm-severity-line--error'
+                : 'alarm-severity-line--resolved'
+            "
+          />
+          <div
+            class="alarm-item__icon"
+            :class="
+              alarma.evento === 'activacion'
+                ? 'alarm-item__icon--error'
+                : 'alarm-item__icon--resolved'
+            "
+          >
+            <v-icon size="23">
+              {{ alarma.evento === 'activacion' ? tipoAlarmaIcono(alarma.tipo) : 'mdi-check' }}
+            </v-icon>
+          </div>
+          <div class="alarm-item__content">
+            <div class="alarm-item__top">
+              <div class="alarm-item__message">
+                {{ alarma.descripcion ?? tipoAlarmaLabel(alarma.tipo) }}
+              </div>
+              <div class="alarm-item__chips">
+                <v-chip
+                  size="small"
+                  :color="alarma.evento === 'activacion' ? 'error' : 'success'"
+                  variant="tonal"
+                  class="alarm-type-chip"
+                >
+                  <v-icon start size="15">
+                    {{
+                      alarma.evento === 'activacion'
+                        ? 'mdi-alert-circle-outline'
+                        : 'mdi-check-circle-outline'
+                    }}
+                  </v-icon>
+                  {{ alarma.evento === 'activacion' ? 'Activación' : 'Restablecimiento' }}
+                </v-chip>
+                <v-chip size="small" color="warning" variant="tonal" class="alarm-type-chip">
+                  <v-icon start size="15"> mdi-chip </v-icon>
+                  PLC{{ alarma.plc_id }}
+                </v-chip>
+              </div>
+            </div>
+            <div class="alarm-item__meta">
+              <span v-if="alarma.nave_nombre" class="alarm-meta">
+                <v-icon size="15"> mdi-greenhouse </v-icon>
+                {{ alarma.nave_nombre }}
+              </span>
+              <span v-else class="alarm-meta">
+                <v-icon size="15"> mdi-broadcast </v-icon>
+                Global
+              </span>
+              <span class="alarm-meta">
+                <v-icon size="15"> mdi-clock-outline </v-icon>
+                {{ formatFecha(alarma.timestamp) }}
+              </span>
+              <span class="alarm-meta">
+                <v-icon size="15"> mdi-identifier </v-icon>
+                {{ alarma.alarma_id }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </v-card>
+
     <v-card class="main-card" rounded="xl" elevation="0">
       <div class="alarm-toolbar">
         <div class="alarm-toolbar__title">
@@ -387,6 +579,59 @@ const loadingStore = useLoadingStore()
 const { zonas } = storeToRefs(invernaderosStore)
 
 const alarmas = ref<any[]>([])
+
+// --- Alarmas PLC ---
+const alarmasPlcActivas = ref<any[]>([])
+const historialAlarmasPlc = ref<any[]>([])
+const cargandoPlc = ref(false)
+
+const tipoAlarmaLabel = (tipo: string) => {
+  const labels: Record<string, string> = {
+    sobrecorriente: 'Sobrecorriente',
+    fallo_comunicacion_vfd: 'Fallo comunicación VFD',
+    falla_vfd: 'Falla VFD',
+    fallo_comunicacion_nodo_lora: 'Fallo nodo LoRa',
+    proteccion_red_rm22: 'Protección red RM22',
+  }
+  return labels[tipo] ?? tipo
+}
+
+const tipoAlarmaIcono = (tipo: string) => {
+  const iconos: Record<string, string> = {
+    sobrecorriente: 'mdi-current-ac',
+    fallo_comunicacion_vfd: 'mdi-lan-disconnect',
+    falla_vfd: 'mdi-engine-off-outline',
+    fallo_comunicacion_nodo_lora: 'mdi-signal-off',
+    proteccion_red_rm22: 'mdi-shield-alert-outline',
+  }
+  return iconos[tipo] ?? 'mdi-alert-outline'
+}
+
+const tiempoDesde = (fecha: string) => {
+  if (!fecha) return '—'
+  const diff = Date.now() - new Date(fecha).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 60) return `${min} min`
+  const hrs = Math.floor(min / 60)
+  if (hrs < 24) return `${hrs} h`
+  return `${Math.floor(hrs / 24)} d`
+}
+
+const cargarAlarmasPlc = async () => {
+  cargandoPlc.value = true
+  try {
+    const [activas, historial] = await Promise.all([
+      api.get('/alarmas/plc/activas'),
+      api.get('/alarmas/plc/historial'),
+    ])
+    alarmasPlcActivas.value = activas.data.ok ? activas.data.data : []
+    historialAlarmasPlc.value = historial.data.ok ? historial.data.data : []
+  } catch (error) {
+    console.error('Error cargando alarmas PLC:', error)
+  } finally {
+    cargandoPlc.value = false
+  }
+}
 
 const cargando = ref(false)
 
@@ -945,11 +1190,9 @@ const resolverTodas = async () => {
 
 onMounted(async () => {
   loadingStore.mostrar('Cargando alarmas...')
-
   try {
     await invernaderosStore.cargarZonas()
-
-    await cargar()
+    await Promise.all([cargar(), cargarAlarmasPlc()])
   } finally {
     loadingStore.ocultar()
   }
