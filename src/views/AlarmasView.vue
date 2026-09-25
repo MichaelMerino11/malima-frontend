@@ -592,6 +592,10 @@ const tipoAlarmaLabel = (tipo: string) => {
     falla_vfd: 'Falla VFD',
     fallo_comunicacion_nodo_lora: 'Fallo nodo LoRa',
     proteccion_red_rm22: 'Protección red RM22',
+    fallo_estacion_meteorologica: 'Fallo estación meteorológica',
+    conflicto_ordenes_vfd: 'Conflicto órdenes VFD',
+    fallo_no_arranque_vfd: 'Fallo no arranque VFD',
+    exceso_tiempo_marcha: 'Exceso tiempo de marcha',
   }
   return labels[tipo] ?? tipo
 }
@@ -603,6 +607,10 @@ const tipoAlarmaIcono = (tipo: string) => {
     falla_vfd: 'mdi-engine-off-outline',
     fallo_comunicacion_nodo_lora: 'mdi-signal-off',
     proteccion_red_rm22: 'mdi-shield-alert-outline',
+    fallo_estacion_meteorologica: 'mdi-weather-cloudy-alert',
+    conflicto_ordenes_vfd: 'mdi-swap-horizontal-bold',
+    fallo_no_arranque_vfd: 'mdi-play-circle-outline',
+    exceso_tiempo_marcha: 'mdi-timer-alert-outline',
   }
   return iconos[tipo] ?? 'mdi-alert-outline'
 }
