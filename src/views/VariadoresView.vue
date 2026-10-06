@@ -24,20 +24,30 @@
       </div>
 
       <div class="page-header__actions">
-        <v-select
-          v-model="zonaSeleccionada"
-          :items="zonaItems"
-          item-title="nombre"
-          item-value="id"
-          label="Zona"
-          density="compact"
-          variant="outlined"
-          rounded="lg"
-          hide-details
-          prepend-inner-icon="mdi-map-marker-outline"
-          class="zone-selector"
-          @update:model-value="cambiarZona"
-        />
+        <div class="zone-switcher">
+          <v-btn
+            icon
+            size="small"
+            variant="text"
+            :disabled="zonaItems.length <= 1"
+            @click="zonaAnterior"
+          >
+            <v-icon size="20"> mdi-chevron-left </v-icon>
+          </v-btn>
+          <div class="zone-switcher__label">
+            <v-icon size="16" color="primary"> mdi-map-marker-outline </v-icon>
+            <span>{{ zonaActualNombre }}</span>
+          </div>
+          <v-btn
+            icon
+            size="small"
+            variant="text"
+            :disabled="zonaItems.length <= 1"
+            @click="zonaSiguiente"
+          >
+            <v-icon size="20"> mdi-chevron-right </v-icon>
+          </v-btn>
+        </div>
 
         <v-btn
           color="primary"
@@ -432,6 +442,20 @@ const zonaActualNombre = computed(() => {
   return 'Zona seleccionada'
 })
 
+const zonaAnterior = async () => {
+  const idx = zonaItems.value.findIndex((z: any) => Number(z.id) === Number(zonaSeleccionada.value))
+  const anterior = zonaItems.value[(idx - 1 + zonaItems.value.length) % zonaItems.value.length]
+  zonaSeleccionada.value = anterior.id
+  await cambiarZona()
+}
+
+const zonaSiguiente = async () => {
+  const idx = zonaItems.value.findIndex((z: any) => Number(z.id) === Number(zonaSeleccionada.value))
+  const siguiente = zonaItems.value[(idx + 1) % zonaItems.value.length]
+  zonaSeleccionada.value = siguiente.id
+  await cambiarZona()
+}
+
 const distribucionActual = computed(() => {
   if (zonaActualLetra.value === 'A') return 'Naves 1A · 2A · 3A · 4A · 5A · 6A · 7A'
   if (zonaActualLetra.value === 'B') return 'Naves 1B · 2B · 3B · 4B · 5B · 6B · 7B'
@@ -556,7 +580,11 @@ const variadores = computed(() => {
   return variadoresUnicos.value
     .filter((variador) => {
       const nombre = String(
-        variador?.galpon_nombre ?? variador?.invernadero_nombre ?? variador?.nombre ?? '',
+        variador?.galpon_nombre ??
+          variador?.invernadero_nombre ??
+          variador?.nave_nombre ??
+          variador?.nombre ??
+          '',
       )
       return nombre.includes(letra)
     })
@@ -838,29 +866,14 @@ const cargarVariadoresTodasLasZonas = async () => {
 }
 
 const cargar = async () => {
-  if (cargando.value) {
-    return
-  }
-
+  if (cargando.value) return
   cargando.value = true
-
   try {
-    /*
-     * Temporalmente consultamos todas
-     * las zonas existentes porque la
-     * base de datos todavía puede tener
-     * Naves 1-14 distribuidas entre
-     * Zona A, B, C y D.
-     *
-     * Después las reorganizamos:
-     *
-     * Zona A -> impares
-     * Zona B -> pares
-     */
-    await cargarVariadoresTodasLasZonas()
+    if (!zonaSeleccionada.value) return
+    const { data } = await api.get(`/zonas/${zonaSeleccionada.value}/variadores`)
+    variadoresFuente.value = data.ok ? data.data : []
   } catch (error) {
     console.error('Error cargando variadores:', error)
-
     variadoresFuente.value = []
   } finally {
     cargando.value = false
@@ -1712,6 +1725,25 @@ onUnmounted(() => {
 
   font-size: 1rem;
   font-weight: 700;
+}
+
+.zone-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--v-border-color), 0.6);
+}
+
+.zone-switcher__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 70px;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
 .empty-state p {
