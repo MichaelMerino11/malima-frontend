@@ -22,44 +22,6 @@
           </p>
         </div>
       </div>
-
-      <div class="page-header__actions">
-        <div class="zone-switcher">
-          <v-btn
-            icon
-            size="small"
-            variant="text"
-            :disabled="zonaItems.length <= 1"
-            @click="zonaAnterior"
-          >
-            <v-icon size="20"> mdi-chevron-left </v-icon>
-          </v-btn>
-          <div class="zone-switcher__label">
-            <v-icon size="16" color="primary"> mdi-map-marker-outline </v-icon>
-            <span>{{ zonaActualNombre }}</span>
-          </div>
-          <v-btn
-            icon
-            size="small"
-            variant="text"
-            :disabled="zonaItems.length <= 1"
-            @click="zonaSiguiente"
-          >
-            <v-icon size="20"> mdi-chevron-right </v-icon>
-          </v-btn>
-        </div>
-
-        <v-btn
-          color="primary"
-          variant="tonal"
-          rounded="lg"
-          prepend-icon="mdi-refresh"
-          :loading="cargando"
-          @click="cargar"
-        >
-          Actualizar
-        </v-btn>
-      </div>
     </div>
 
     <v-row class="mb-5">
@@ -119,12 +81,35 @@
         </div>
 
         <div class="panel-header__status">
+          <div class="zone-nav">
+            <v-btn
+              icon
+              size="x-small"
+              variant="text"
+              :disabled="zonaItems.length <= 1"
+              @click="zonaAnterior"
+            >
+              <v-icon size="18"> mdi-chevron-left </v-icon>
+            </v-btn>
+            <div class="zone-nav__label">
+              <v-icon size="14" color="primary"> mdi-map-marker-outline </v-icon>
+              <span>{{ zonaActualNombre }}</span>
+            </div>
+            <v-btn
+              icon
+              size="x-small"
+              variant="text"
+              :disabled="zonaItems.length <= 1"
+              @click="zonaSiguiente"
+            >
+              <v-icon size="18"> mdi-chevron-right </v-icon>
+            </v-btn>
+          </div>
+          <div class="status-separator" />
           <span class="live-indicator">
             <span class="live-indicator__dot" />
-
             Datos en vivo
           </span>
-
           <span class="update-info"> Actualización automática cada 10 s </span>
         </div>
       </div>
@@ -994,18 +979,6 @@ onUnmounted(() => {
   gap: 10px;
 }
 
-.zone-selector {
-  width: 220px;
-}
-
-.zone-selector :deep(.v-field__input) {
-  font-size: 0.84rem;
-}
-
-.zone-selector :deep(.v-field-label) {
-  font-size: 0.8rem;
-}
-
 .status-online {
   font-weight: 600;
 }
@@ -1727,23 +1700,31 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.zone-switcher {
+.zone-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px;
+  border-radius: 10px;
+  background: rgba(var(--v-theme-primary), 0.06);
+}
+
+.zone-nav__label {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(var(--v-border-color), 0.6);
+  min-width: 62px;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: rgb(var(--v-theme-primary));
 }
 
-.zone-switcher__label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 70px;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 650;
+.status-separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(var(--v-border-color), 0.6);
+  margin: 0 4px;
 }
 
 .empty-state p {
@@ -1802,10 +1783,6 @@ onUnmounted(() => {
     flex-shrink: 0;
   }
 
-  .zone-selector {
-    width: 180px;
-  }
-
   .panel-header__status {
     flex-direction: column;
     align-items: flex-end;
@@ -1838,12 +1815,6 @@ onUnmounted(() => {
 
   .page-header__actions {
     width: 100%;
-  }
-
-  .zone-selector {
-    flex: 1;
-
-    width: auto;
   }
 
   .page-title {
@@ -1907,10 +1878,6 @@ onUnmounted(() => {
 @media (max-width: 480px) {
   .page-header__actions {
     flex-direction: column;
-  }
-
-  .zone-selector {
-    width: 100%;
   }
 
   .page-header__actions .v-btn {
