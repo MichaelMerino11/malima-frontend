@@ -15,7 +15,7 @@ export interface Invernadero {
   nombre: string
   numero: number
   estado: 'abierto' | 'cerrado' | 'en_movimiento'
-  modo: 'local' | 'remoto' | 'automatico'
+  modo: 'local' | 'remoto' | 'automatico' | 'desconocido'
   activo: boolean
   estado_motor?: string
 }
@@ -38,9 +38,20 @@ export const useInvernaderosStore = defineStore('invernaderos', () => {
       cargando.value = true
       const { data } = await api.get(`/tinker/ultimo-estado/${zona_id}`)
       if (data.ok) {
+        const nuevas: Invernadero[] = data.data.invernaderos
+
+        for (const nueva of nuevas) {
+          for (const zona of zonas.value) {
+            const idx = zona.invernaderos?.findIndex((n) => n.id === nueva.id) ?? -1
+            if (idx !== -1 && zona.invernaderos) {
+              zona.invernaderos[idx] = nueva
+            }
+          }
+        }
+
         const zona = zonas.value.find((z) => z.id === zona_id)
-        if (zona) {
-          zona.invernaderos = data.data.invernaderos
+        if (zona && (!zona.invernaderos || zona.invernaderos.length === 0)) {
+          zona.invernaderos = nuevas
         }
       }
     } catch (e) {
